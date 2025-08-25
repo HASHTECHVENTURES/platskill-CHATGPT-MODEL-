@@ -48,7 +48,7 @@ const CONFIG = {
         'codellama-34b': { provider: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions' }
     },
     
-    REQUIRED_FIELDS: ['name', 'education-level', 'education-year', 'semester', 'program', 'main-skill', 'skill-level', 'task-count', 'api-provider', 'ai-model'],
+    REQUIRED_FIELDS: ['name', 'education-level', 'education-year', 'semester', 'program', 'main-skill', 'skill-level', 'task-count'],
     SUPPORTED_LANGUAGES: {
         'en': 'English',
         'hi': 'Hindi',
@@ -111,8 +111,7 @@ const DOM = {
     promptsModal: null,
     closePromptsModal: null,
     resetPromptsBtn: null,
-    apiProviderSelect: null,
-    aiModelSelect: null,
+
     
     init() {
         this.form = document.getElementById('taskForm');
@@ -127,8 +126,7 @@ const DOM = {
         this.promptsModal = document.getElementById('promptsModal');
         this.closePromptsModal = document.getElementById('closePromptsModal');
         this.resetPromptsBtn = document.getElementById('resetPrompts');
-        this.apiProviderSelect = document.getElementById('api-provider');
-        this.aiModelSelect = document.getElementById('ai-model');
+
     }
 };
 
@@ -155,12 +153,7 @@ function initApp() {
         }
     });
     
-    // Check API provider availability when form loads
-    DOM.apiProviderSelect?.addEventListener('change', checkApiProviderAvailability);
-    
-    // Update AI model options based on selected provider
-    DOM.apiProviderSelect?.addEventListener('change', updateAiModelOptions);
-    DOM.aiModelSelect?.addEventListener('change', updateApiProviderFromModel);
+
     
     // Initialize default prompts and API keys
     initializeDefaultPrompts();
@@ -169,9 +162,7 @@ function initApp() {
     // Initialize custom prompts management
     initCustomPrompts();
     
-    // Check API provider availability on page load
-    setTimeout(checkApiProviderAvailability, 100);
-    setTimeout(updateAiModelOptions, 100);
+
 }
 
 // Form submission handler
@@ -203,39 +194,10 @@ function validateForm(data) {
             return false;
         }
     }
-    
-    // Validate API provider selection
-    const selectedProvider = data['api-provider'];
-    if (!selectedProvider) {
-        displayError('Please select an API provider.');
-        return false;
-    }
-    
-    // Check if selected provider has API key configured
-    if (selectedProvider === 'openrouter') {
-        const openRouterKey = localStorage.getItem('openRouterApiKey') || CONFIG.OPENROUTER_API_KEY;
-        if (!openRouterKey || openRouterKey === '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') {
-            displayError('Please configure your OpenRouter API key in the prompts settings.');
-            return false;
-        }
-    } else if (selectedProvider === 'gemini1') {
-        const geminiKey1 = localStorage.getItem('geminiApiKey1') || CONFIG.GEMINI_API_KEYS[0];
-        if (!geminiKey1 || geminiKey1 === 'AIzaSyAh_H6EwL3KOgJ8m086W3OBlCqPo7Khewk') {
-            displayError('Please configure your Gemini API Key 1 in the prompts settings.');
-            return false;
-        }
-    } else if (selectedProvider === 'gemini2') {
-        const geminiKey2 = localStorage.getItem('geminiApiKey2') || CONFIG.GEMINI_API_KEYS[1];
-        if (!geminiKey2 || geminiKey2 === 'AIzaSyC0rDffMvwYnTVpAsUI2iMY-N5CqU7lvmU') {
-            displayError('Please configure your Gemini API Key 2 in the prompts settings.');
-            return false;
-        }
-    }
-    
     return true;
 }
 
-// Smart API call with user-selected provider and fallback
+// Smart API call with OpenRouter primary and Gemini fallback
 async function makeGeminiAPICall(prompt, config = {}) {
     const defaultConfig = {
         maxOutputTokens: 2048,
@@ -244,242 +206,125 @@ async function makeGeminiAPICall(prompt, config = {}) {
     };
     
     const finalConfig = { ...defaultConfig, ...config };
-    const selectedProvider = DOM.apiProviderSelect?.value || 'auto';
-    const selectedModel = DOM.aiModelSelect?.value || 'auto';
     
-    // If user selected a specific provider, try that first
-    if (selectedProvider !== 'auto') {
-        try {
-            console.log(`Attempting API call with selected provider: ${selectedProvider}, model: ${selectedModel}`);
+    // Try OpenRouter first (Primary)
+    try {
+        console.log('Attempting API call with OpenRouter (Gemini 2.5 Pro)...');
+        
+        const response = await fetch(CONFIG.OPENROUTER_API_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${CONFIG.OPENROUTER_API_KEY}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': window.location.origin,
+                'X-Title': 'PLAT SKILL Task Generator'
+            },
+            body: JSON.stringify({
+                model: CONFIG.OPENROUTER_MODEL,
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ],
+                max_tokens: finalConfig.maxOutputTokens,
+                temperature: finalConfig.temperature,
+                top_p: finalConfig.topP
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.warn(`OpenRouter API call failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
             
-            switch (selectedProvider) {
-                case 'openrouter':
-                    return await callOpenRouterAPI(prompt, finalConfig, selectedModel);
-                case 'gemini1':
-                    return await callGeminiAPI(prompt, finalConfig, 0, selectedModel);
-                case 'gemini2':
-                    return await callGeminiAPI(prompt, finalConfig, 1, selectedModel);
-                case 'openai':
-                    return await callOpenAIAPI(prompt, finalConfig, selectedModel);
-                case 'anthropic':
-                    return await callAnthropicAPI(prompt, finalConfig, selectedModel);
-                case 'custom':
-                    return await callCustomAPI(prompt, finalConfig, selectedModel);
-                default:
-                    throw new Error(`Unknown provider: ${selectedProvider}`);
+            // Check for specific OpenRouter errors
+            if (response.status === 402) {
+                console.warn('OpenRouter insufficient credits, falling back to Gemini...');
+            } else if (response.status === 429) {
+                console.warn('OpenRouter rate limited, falling back to Gemini...');
             }
-        } catch (error) {
-            console.warn(`Selected provider ${selectedProvider} failed, falling back to auto mode...`, error.message);
-            // Fall back to auto mode if selected provider fails
+            
+            throw new Error(`OpenRouter failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.choices?.[0]?.message?.content) {
+            console.warn('Invalid response from OpenRouter');
+            throw new Error('Invalid response from OpenRouter');
+        }
+
+        console.log('API call successful with OpenRouter (Gemini 2.5 Pro)');
+        return data.choices[0].message.content.trim();
+        
+    } catch (error) {
+        console.warn('OpenRouter failed, trying Gemini fallback...', error.message);
+        
+        // Fallback to Gemini API keys
+        for (let i = 0; i < CONFIG.GEMINI_API_KEYS.length; i++) {
+            const apiKey = CONFIG.GEMINI_API_KEYS[i];
+            const isPrimary = i === 0;
+            
+            try {
+                console.log(`Attempting Gemini API call with ${isPrimary ? 'primary' : 'secondary'} key...`);
+                
+                const response = await fetch(`${CONFIG.GEMINI_API_URL}?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: finalConfig
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.warn(`Gemini API call failed with ${isPrimary ? 'primary' : 'secondary'} key: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+                    
+                    // Check if it's a rate limit error
+                    if (response.status === 429) {
+                        const retryDelay = errorData.error?.details?.[0]?.['@type'] === 'type.googleapis.com/google.rpc.RetryInfo' 
+                            ? parseInt(errorData.error.details[0].retryDelay) * 1000 
+                            : 60000; // Default 60 seconds
+                        
+                        console.log(`Rate limited. Waiting ${retryDelay/1000} seconds before trying next key...`);
+                        await new Promise(resolve => setTimeout(resolve, retryDelay));
+                    }
+                    
+                    if (i === CONFIG.GEMINI_API_KEYS.length - 1) {
+                        throw new Error(`All API keys failed. Last error: ${response.status}`);
+                    }
+                    continue; // Try next key
+                }
+
+                const data = await response.json();
+                
+                if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    console.warn(`Invalid response from ${isPrimary ? 'primary' : 'secondary'} key`);
+                    if (i === CONFIG.GEMINI_API_KEYS.length - 1) {
+                        throw new Error('Invalid response from all API keys');
+                    }
+                    continue; // Try next key
+                }
+
+                console.log(`API call successful with ${isPrimary ? 'primary' : 'secondary'} Gemini key`);
+                return data.candidates[0].content.parts[0].text.trim();
+                
+            } catch (error) {
+                console.warn(`Error with ${isPrimary ? 'primary' : 'secondary'} Gemini key:`, error.message);
+                
+                if (i === CONFIG.GEMINI_API_KEYS.length - 1) {
+                    throw error; // Re-throw if all keys failed
+                }
+                // Continue to next key
+            }
         }
     }
-    
-    // Auto mode: Try providers in order of preference
-    const providers = [
-        { name: 'OpenRouter', func: () => callOpenRouterAPI(prompt, finalConfig, selectedModel) },
-        { name: 'Gemini1', func: () => callGeminiAPI(prompt, finalConfig, 0, selectedModel) },
-        { name: 'Gemini2', func: () => callGeminiAPI(prompt, finalConfig, 1, selectedModel) },
-        { name: 'OpenAI', func: () => callOpenAIAPI(prompt, finalConfig, selectedModel) },
-        { name: 'Anthropic', func: () => callAnthropicAPI(prompt, finalConfig, selectedModel) }
-    ];
-    
-    for (const provider of providers) {
-        try {
-            console.log(`Trying ${provider.name}...`);
-            return await provider.func();
-        } catch (error) {
-            console.warn(`${provider.name} failed:`, error.message);
-            continue;
-        }
-    }
-    
-    throw new Error('All API providers failed');
 }
 
-// Helper function for OpenRouter API calls
-async function callOpenRouterAPI(prompt, config, model) {
-    const response = await fetch(CONFIG.OPENROUTER_API_URL, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${CONFIG.OPENROUTER_API_KEY}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'PLAT SKILL Task Generator'
-        },
-        body: JSON.stringify({
-            model: CONFIG.MODELS[model]?.url || CONFIG.OPENROUTER_MODEL, // Use model-specific URL if available
-            messages: [
-                {
-                    role: 'user',
-                    content: prompt
-                }
-            ],
-            max_tokens: config.maxOutputTokens,
-            temperature: config.temperature,
-            top_p: config.topP
-        })
-    });
 
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`OpenRouter failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
-    }
-
-    const data = await response.json();
-    
-    if (!data.choices?.[0]?.message?.content) {
-        throw new Error('Invalid response from OpenRouter');
-    }
-
-    console.log('API call successful with OpenRouter (Gemini 2.5 Pro)');
-    return data.choices[0].message.content.trim();
-}
-
-// Helper function for Gemini API calls
-async function callGeminiAPI(prompt, config, keyIndex, model) {
-    const apiKey = CONFIG.GEMINI_API_KEYS[keyIndex];
-    const isPrimary = keyIndex === 0;
-    
-    const response = await fetch(`${CONFIG.GEMINI_API_URL}?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: config
-        })
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Gemini API call failed with ${isPrimary ? 'primary' : 'secondary'} key: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
-    }
-
-    const data = await response.json();
-    
-    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        throw new Error(`Invalid response from ${isPrimary ? 'primary' : 'secondary'} key`);
-    }
-
-    console.log(`API call successful with ${isPrimary ? 'primary' : 'secondary'} Gemini key`);
-    return data.candidates[0].content.parts[0].text.trim();
-}
-
-// Helper function for OpenAI API calls
-async function callOpenAIAPI(prompt, config, model) {
-    const response = await fetch(CONFIG.OPENAI_API_URL, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${CONFIG.OPENAI_API_KEY}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            model: CONFIG.MODELS[model]?.url || CONFIG.OPENAI_API_URL.split('/').pop(), // Use model-specific URL if available
-            messages: [
-                {
-                    role: 'user',
-                    content: prompt
-                }
-            ],
-            max_tokens: config.maxOutputTokens,
-            temperature: config.temperature,
-            top_p: config.topP
-        })
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`OpenAI failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
-    }
-
-    const data = await response.json();
-    
-    if (!data.choices?.[0]?.message?.content) {
-        throw new Error('Invalid response from OpenAI');
-    }
-
-    console.log('API call successful with OpenAI');
-    return data.choices[0].message.content.trim();
-}
-
-// Helper function for Anthropic API calls
-async function callAnthropicAPI(prompt, config, model) {
-    const response = await fetch(CONFIG.ANTHROPIC_API_URL, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${CONFIG.ANTHROPIC_API_KEY}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            model: CONFIG.MODELS[model]?.url || CONFIG.ANTHROPIC_API_URL.split('/').pop(), // Use model-specific URL if available
-            messages: [
-                {
-                    role: 'user',
-                    content: prompt
-                }
-            ],
-            max_tokens: config.maxOutputTokens,
-            temperature: config.temperature,
-            top_p: config.topP
-        })
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Anthropic failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
-    }
-
-    const data = await response.json();
-    
-    if (!data.candidates?.[0]?.message?.content?.parts?.[0]?.text) {
-        throw new Error('Invalid response from Anthropic');
-    }
-
-    console.log('API call successful with Anthropic');
-    return data.candidates[0].message.content.parts[0].text.trim();
-}
-
-// Helper function for Custom API calls
-async function callCustomAPI(prompt, config, model) {
-    if (!CONFIG.CUSTOM_API_ENDPOINT || !CONFIG.CUSTOM_API_KEY) {
-        throw new Error('Custom API endpoint or key not configured.');
-    }
-
-    const response = await fetch(CONFIG.CUSTOM_API_ENDPOINT, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${CONFIG.CUSTOM_API_KEY}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            model: CONFIG.MODELS[model]?.url || CONFIG.CUSTOM_API_ENDPOINT.split('/').pop(), // Use model-specific URL if available
-            messages: [
-                {
-                    role: 'user',
-                    content: prompt
-                }
-            ],
-            max_tokens: config.maxOutputTokens,
-            temperature: config.temperature,
-            top_p: config.topP
-        })
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Custom API failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
-    }
-
-    const data = await response.json();
-    
-    if (!data.choices?.[0]?.message?.content) {
-        throw new Error('Invalid response from Custom API');
-    }
-
-    console.log('API call successful with Custom API');
-    return data.choices[0].message.content.trim();
-}
 
 // Generate employability tasks
 async function generateEmployabilityTasks(studentData) {
@@ -1175,52 +1020,10 @@ function loadSavedPrompts() {
     }
 }
 
-// Check API provider availability and update options
-async function checkApiProviderAvailability() {
-    const apiProviderSelect = DOM.apiProviderSelect;
-    if (!apiProviderSelect) return;
-    
-    // Reset all options
-    const options = apiProviderSelect.querySelectorAll('option');
-    options.forEach(option => {
-        option.textContent = option.textContent.replace(/ ✓| ✗| ⏳/g, '');
-    });
-    
-    // Check each provider
-    const providers = [
-        { value: 'openrouter', name: 'OpenRouter (Gemini 2.5 Pro)', key: 'openRouterApiKey' },
-        { value: 'gemini1', name: 'Gemini API Key 1', key: 'geminiApiKey1' },
-        { value: 'gemini2', name: 'Gemini API Key 2', key: 'geminiApiKey2' }
-    ];
-    
-    for (const provider of providers) {
-        const option = apiProviderSelect.querySelector(`option[value="${provider.value}"]`);
-        if (!option) continue;
-        
-        // Check if API key is configured
-        const savedKey = localStorage.getItem(provider.key);
-        const defaultKey = provider.key === 'openRouterApiKey' ? CONFIG.OPENROUTER_API_KEY : 
-                          provider.key === 'geminiApiKey1' ? CONFIG.GEMINI_API_KEYS[0] : CONFIG.GEMINI_API_KEYS[1];
-        
-        const hasCustomKey = savedKey && savedKey !== defaultKey;
-        
-        if (hasCustomKey) {
-            option.textContent = `${provider.name} ✓`;
-            option.style.color = '#28a745';
-        } else {
-            option.textContent = `${provider.name} ✗`;
-            option.style.color = '#dc3545';
-        }
-    }
-}
-
-// Update API provider options when prompts modal is opened
+// Show prompts modal
 function showPromptsModal() {
     DOM.promptsModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
-    
-    // Check API provider availability
-    checkApiProviderAvailability();
 }
 
 function hidePromptsModal() {
@@ -1873,74 +1676,3 @@ function initCustomPrompts() {
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', initApp);
 
-// Update AI model options based on selected API provider
-function updateAiModelOptions() {
-    const selectedProvider = DOM.apiProviderSelect?.value;
-    const aiModelSelect = DOM.aiModelSelect;
-    
-    if (!aiModelSelect || !selectedProvider) return;
-    
-    // Show/hide options based on provider
-    const options = aiModelSelect.querySelectorAll('option');
-    options.forEach(option => {
-        if (option.value === 'auto') {
-            option.style.display = 'block'; // Always show auto
-            return;
-        }
-        
-        const modelProvider = option.getAttribute('data-provider');
-        if (selectedProvider === 'auto' || selectedProvider === modelProvider || 
-            (selectedProvider === 'openrouter' && modelProvider === 'openrouter') ||
-            (selectedProvider === 'gemini1' && modelProvider === 'gemini') ||
-            (selectedProvider === 'gemini2' && modelProvider === 'gemini') ||
-            (selectedProvider === 'openai' && modelProvider === 'openai') ||
-            (selectedProvider === 'anthropic' && modelProvider === 'anthropic') ||
-            (selectedProvider === 'custom' && modelProvider === 'custom')) {
-            option.style.display = 'block';
-        } else {
-            option.style.display = 'none';
-        }
-    });
-    
-    // If current selection is not available, reset to auto
-    const currentValue = aiModelSelect.value;
-    const currentOption = aiModelSelect.querySelector(`option[value="${currentValue}"]`);
-    if (!currentOption || currentOption.style.display === 'none') {
-        aiModelSelect.value = 'auto';
-    }
-}
-
-// Update API provider based on selected AI model
-function updateApiProviderFromModel() {
-    const selectedModel = DOM.aiModelSelect?.value;
-    const apiProviderSelect = DOM.apiProviderSelect;
-    
-    if (!apiProviderSelect || !selectedModel || selectedModel === 'auto') return;
-    
-    const modelOption = DOM.aiModelSelect.querySelector(`option[value="${selectedModel}"]`);
-    const modelProvider = modelOption?.getAttribute('data-provider');
-    
-    if (modelProvider) {
-        // Map model provider to API provider
-        let apiProvider = 'auto';
-        switch (modelProvider) {
-            case 'gemini':
-                apiProvider = 'gemini1'; // Default to gemini1
-                break;
-            case 'openai':
-                apiProvider = 'openai';
-                break;
-            case 'anthropic':
-                apiProvider = 'anthropic';
-                break;
-            case 'openrouter':
-                apiProvider = 'openrouter';
-                break;
-        }
-        
-        if (apiProviderSelect.value !== apiProvider) {
-            apiProviderSelect.value = apiProvider;
-            updateAiModelOptions(); // Refresh model options
-        }
-    }
-}
