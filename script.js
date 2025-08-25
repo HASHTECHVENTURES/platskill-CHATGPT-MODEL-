@@ -13,7 +13,42 @@ const CONFIG = {
     OPENROUTER_API_URL: 'https://openrouter.ai/api/v1/chat/completions',
     OPENROUTER_MODEL: 'google/gemini-2.5-pro',
     
-    REQUIRED_FIELDS: ['name', 'education-level', 'education-year', 'semester', 'program', 'main-skill', 'skill-level', 'task-count', 'api-provider'],
+    // OpenAI API - will be loaded from localStorage
+    OPENAI_API_KEY: '',
+    OPENAI_API_URL: 'https://api.openai.com/v1/chat/completions',
+    
+    // Anthropic API - will be loaded from localStorage
+    ANTHROPIC_API_KEY: '',
+    ANTHROPIC_API_URL: 'https://api.anthropic.com/v1/messages',
+    
+    // Custom API - will be loaded from localStorage
+    CUSTOM_API_ENDPOINT: '',
+    CUSTOM_API_KEY: '',
+    
+    // Model configurations
+    MODELS: {
+        // Gemini Models
+        'gemini-2.0-flash': { provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent' },
+        'gemini-1.5-pro': { provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent' },
+        'gemini-1.5-flash': { provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent' },
+        
+        // OpenAI Models
+        'gpt-4o': { provider: 'openai', url: 'https://api.openai.com/v1/chat/completions' },
+        'gpt-4o-mini': { provider: 'openai', url: 'https://api.openai.com/v1/chat/completions' },
+        
+        // Anthropic Models
+        'claude-3-5-sonnet': { provider: 'anthropic', url: 'https://api.anthropic.com/v1/messages' },
+        'claude-3-haiku': { provider: 'anthropic', url: 'https://api.anthropic.com/v1/messages' },
+        
+        // OpenRouter Models
+        'llama-3.2-3b': { provider: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions' },
+        'llama-3.2-8b': { provider: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions' },
+        'llama-3.2-70b': { provider: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions' },
+        'mixtral-8x7b': { provider: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions' },
+        'codellama-34b': { provider: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions' }
+    },
+    
+    REQUIRED_FIELDS: ['name', 'education-level', 'education-year', 'semester', 'program', 'main-skill', 'skill-level', 'task-count', 'api-provider', 'ai-model'],
     SUPPORTED_LANGUAGES: {
         'en': 'English',
         'hi': 'Hindi',
@@ -31,6 +66,10 @@ function loadConfigFromStorage() {
     const savedOpenRouterKey = localStorage.getItem('openRouterApiKey');
     const savedGeminiKey1 = localStorage.getItem('geminiApiKey1');
     const savedGeminiKey2 = localStorage.getItem('geminiApiKey2');
+    const savedOpenAIKey = localStorage.getItem('openaiApiKey');
+    const savedAnthropicKey = localStorage.getItem('anthropicApiKey');
+    const savedCustomEndpoint = localStorage.getItem('customApiEndpoint');
+    const savedCustomKey = localStorage.getItem('customApiKey');
     
     if (savedOpenRouterKey) {
         CONFIG.OPENROUTER_API_KEY = savedOpenRouterKey;
@@ -40,6 +79,18 @@ function loadConfigFromStorage() {
     }
     if (savedGeminiKey2) {
         CONFIG.GEMINI_API_KEYS[1] = savedGeminiKey2;
+    }
+    if (savedOpenAIKey) {
+        CONFIG.OPENAI_API_KEY = savedOpenAIKey;
+    }
+    if (savedAnthropicKey) {
+        CONFIG.ANTHROPIC_API_KEY = savedAnthropicKey;
+    }
+    if (savedCustomEndpoint) {
+        CONFIG.CUSTOM_API_ENDPOINT = savedCustomEndpoint;
+    }
+    if (savedCustomKey) {
+        CONFIG.CUSTOM_API_KEY = savedCustomKey;
     }
 }
 
@@ -61,6 +112,7 @@ const DOM = {
     closePromptsModal: null,
     resetPromptsBtn: null,
     apiProviderSelect: null,
+    aiModelSelect: null,
     
     init() {
         this.form = document.getElementById('taskForm');
@@ -76,6 +128,7 @@ const DOM = {
         this.closePromptsModal = document.getElementById('closePromptsModal');
         this.resetPromptsBtn = document.getElementById('resetPrompts');
         this.apiProviderSelect = document.getElementById('api-provider');
+        this.aiModelSelect = document.getElementById('ai-model');
     }
 };
 
@@ -105,12 +158,20 @@ function initApp() {
     // Check API provider availability when form loads
     DOM.apiProviderSelect?.addEventListener('change', checkApiProviderAvailability);
     
+    // Update AI model options based on selected provider
+    DOM.apiProviderSelect?.addEventListener('change', updateAiModelOptions);
+    DOM.aiModelSelect?.addEventListener('change', updateApiProviderFromModel);
+    
     // Initialize default prompts and API keys
     initializeDefaultPrompts();
     loadSavedApiKeys();
     
+    // Initialize custom prompts management
+    initCustomPrompts();
+    
     // Check API provider availability on page load
     setTimeout(checkApiProviderAvailability, 100);
+    setTimeout(updateAiModelOptions, 100);
 }
 
 // Form submission handler
@@ -184,19 +245,26 @@ async function makeGeminiAPICall(prompt, config = {}) {
     
     const finalConfig = { ...defaultConfig, ...config };
     const selectedProvider = DOM.apiProviderSelect?.value || 'auto';
+    const selectedModel = DOM.aiModelSelect?.value || 'auto';
     
     // If user selected a specific provider, try that first
     if (selectedProvider !== 'auto') {
         try {
-            console.log(`Attempting API call with selected provider: ${selectedProvider}`);
+            console.log(`Attempting API call with selected provider: ${selectedProvider}, model: ${selectedModel}`);
             
             switch (selectedProvider) {
                 case 'openrouter':
-                    return await callOpenRouterAPI(prompt, finalConfig);
+                    return await callOpenRouterAPI(prompt, finalConfig, selectedModel);
                 case 'gemini1':
-                    return await callGeminiAPI(prompt, finalConfig, 0);
+                    return await callGeminiAPI(prompt, finalConfig, 0, selectedModel);
                 case 'gemini2':
-                    return await callGeminiAPI(prompt, finalConfig, 1);
+                    return await callGeminiAPI(prompt, finalConfig, 1, selectedModel);
+                case 'openai':
+                    return await callOpenAIAPI(prompt, finalConfig, selectedModel);
+                case 'anthropic':
+                    return await callAnthropicAPI(prompt, finalConfig, selectedModel);
+                case 'custom':
+                    return await callCustomAPI(prompt, finalConfig, selectedModel);
                 default:
                     throw new Error(`Unknown provider: ${selectedProvider}`);
             }
@@ -206,30 +274,30 @@ async function makeGeminiAPICall(prompt, config = {}) {
         }
     }
     
-    // Auto mode: Try OpenRouter first, then Gemini fallbacks
-    try {
-        console.log('Attempting API call with OpenRouter (Gemini 2.5 Pro)...');
-        return await callOpenRouterAPI(prompt, finalConfig);
-    } catch (error) {
-        console.warn('OpenRouter failed, trying Gemini fallback...', error.message);
-        
-        // Fallback to Gemini API keys
-        for (let i = 0; i < CONFIG.GEMINI_API_KEYS.length; i++) {
-            try {
-                console.log(`Attempting Gemini API call with key ${i + 1}...`);
-                return await callGeminiAPI(prompt, finalConfig, i);
-            } catch (error) {
-                console.warn(`Error with Gemini key ${i + 1}:`, error.message);
-                if (i === CONFIG.GEMINI_API_KEYS.length - 1) {
-                    throw error; // Re-throw if all keys failed
-                }
-            }
+    // Auto mode: Try providers in order of preference
+    const providers = [
+        { name: 'OpenRouter', func: () => callOpenRouterAPI(prompt, finalConfig, selectedModel) },
+        { name: 'Gemini1', func: () => callGeminiAPI(prompt, finalConfig, 0, selectedModel) },
+        { name: 'Gemini2', func: () => callGeminiAPI(prompt, finalConfig, 1, selectedModel) },
+        { name: 'OpenAI', func: () => callOpenAIAPI(prompt, finalConfig, selectedModel) },
+        { name: 'Anthropic', func: () => callAnthropicAPI(prompt, finalConfig, selectedModel) }
+    ];
+    
+    for (const provider of providers) {
+        try {
+            console.log(`Trying ${provider.name}...`);
+            return await provider.func();
+        } catch (error) {
+            console.warn(`${provider.name} failed:`, error.message);
+            continue;
         }
     }
+    
+    throw new Error('All API providers failed');
 }
 
 // Helper function for OpenRouter API calls
-async function callOpenRouterAPI(prompt, config) {
+async function callOpenRouterAPI(prompt, config, model) {
     const response = await fetch(CONFIG.OPENROUTER_API_URL, {
         method: 'POST',
         headers: {
@@ -239,7 +307,7 @@ async function callOpenRouterAPI(prompt, config) {
             'X-Title': 'PLAT SKILL Task Generator'
         },
         body: JSON.stringify({
-            model: CONFIG.OPENROUTER_MODEL,
+            model: CONFIG.MODELS[model]?.url || CONFIG.OPENROUTER_MODEL, // Use model-specific URL if available
             messages: [
                 {
                     role: 'user',
@@ -268,7 +336,7 @@ async function callOpenRouterAPI(prompt, config) {
 }
 
 // Helper function for Gemini API calls
-async function callGeminiAPI(prompt, config, keyIndex) {
+async function callGeminiAPI(prompt, config, keyIndex, model) {
     const apiKey = CONFIG.GEMINI_API_KEYS[keyIndex];
     const isPrimary = keyIndex === 0;
     
@@ -296,6 +364,121 @@ async function callGeminiAPI(prompt, config, keyIndex) {
 
     console.log(`API call successful with ${isPrimary ? 'primary' : 'secondary'} Gemini key`);
     return data.candidates[0].content.parts[0].text.trim();
+}
+
+// Helper function for OpenAI API calls
+async function callOpenAIAPI(prompt, config, model) {
+    const response = await fetch(CONFIG.OPENAI_API_URL, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${CONFIG.OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            model: CONFIG.MODELS[model]?.url || CONFIG.OPENAI_API_URL.split('/').pop(), // Use model-specific URL if available
+            messages: [
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ],
+            max_tokens: config.maxOutputTokens,
+            temperature: config.temperature,
+            top_p: config.topP
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`OpenAI failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.choices?.[0]?.message?.content) {
+        throw new Error('Invalid response from OpenAI');
+    }
+
+    console.log('API call successful with OpenAI');
+    return data.choices[0].message.content.trim();
+}
+
+// Helper function for Anthropic API calls
+async function callAnthropicAPI(prompt, config, model) {
+    const response = await fetch(CONFIG.ANTHROPIC_API_URL, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${CONFIG.ANTHROPIC_API_KEY}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            model: CONFIG.MODELS[model]?.url || CONFIG.ANTHROPIC_API_URL.split('/').pop(), // Use model-specific URL if available
+            messages: [
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ],
+            max_tokens: config.maxOutputTokens,
+            temperature: config.temperature,
+            top_p: config.topP
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Anthropic failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.candidates?.[0]?.message?.content?.parts?.[0]?.text) {
+        throw new Error('Invalid response from Anthropic');
+    }
+
+    console.log('API call successful with Anthropic');
+    return data.candidates[0].message.content.parts[0].text.trim();
+}
+
+// Helper function for Custom API calls
+async function callCustomAPI(prompt, config, model) {
+    if (!CONFIG.CUSTOM_API_ENDPOINT || !CONFIG.CUSTOM_API_KEY) {
+        throw new Error('Custom API endpoint or key not configured.');
+    }
+
+    const response = await fetch(CONFIG.CUSTOM_API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${CONFIG.CUSTOM_API_KEY}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            model: CONFIG.MODELS[model]?.url || CONFIG.CUSTOM_API_ENDPOINT.split('/').pop(), // Use model-specific URL if available
+            messages: [
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ],
+            max_tokens: config.maxOutputTokens,
+            temperature: config.temperature,
+            top_p: config.topP
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Custom API failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.choices?.[0]?.message?.content) {
+        throw new Error('Invalid response from Custom API');
+    }
+
+    console.log('API call successful with Custom API');
+    return data.choices[0].message.content.trim();
 }
 
 // Generate employability tasks
@@ -1204,6 +1387,10 @@ function loadSavedApiKeys() {
     const savedOpenRouterKey = localStorage.getItem('openRouterApiKey');
     const savedGeminiKey1 = localStorage.getItem('geminiApiKey1');
     const savedGeminiKey2 = localStorage.getItem('geminiApiKey2');
+    const savedOpenAIKey = localStorage.getItem('openaiApiKey');
+    const savedAnthropicKey = localStorage.getItem('anthropicApiKey');
+    const savedCustomEndpoint = localStorage.getItem('customApiEndpoint');
+    const savedCustomKey = localStorage.getItem('customApiKey');
 
     if (savedOpenRouterKey) {
         document.getElementById('openrouterApiKey').value = savedOpenRouterKey;
@@ -1214,12 +1401,28 @@ function loadSavedApiKeys() {
     if (savedGeminiKey2) {
         document.getElementById('geminiApiKey2').value = savedGeminiKey2;
     }
+    if (savedOpenAIKey) {
+        document.getElementById('openaiApiKey').value = savedOpenAIKey;
+    }
+    if (savedAnthropicKey) {
+        document.getElementById('anthropicApiKey').value = savedAnthropicKey;
+    }
+    if (savedCustomEndpoint) {
+        document.getElementById('customApiEndpoint').value = savedCustomEndpoint;
+    }
+    if (savedCustomKey) {
+        document.getElementById('customApiKey').value = savedCustomKey;
+    }
 }
 
 function saveApiKeys() {
     const openRouterKey = document.getElementById('openrouterApiKey').value.trim();
     const geminiKey1 = document.getElementById('geminiApiKey1').value.trim();
     const geminiKey2 = document.getElementById('geminiApiKey2').value.trim();
+    const openAIKey = document.getElementById('openaiApiKey').value.trim();
+    const anthropicKey = document.getElementById('anthropicApiKey').value.trim();
+    const customEndpoint = document.getElementById('customApiEndpoint').value.trim();
+    const customKey = document.getElementById('customApiKey').value.trim();
 
     // Save to localStorage
     if (openRouterKey) {
@@ -1240,10 +1443,38 @@ function saveApiKeys() {
         localStorage.removeItem('geminiApiKey2');
     }
 
+    if (openAIKey) {
+        localStorage.setItem('openaiApiKey', openAIKey);
+    } else {
+        localStorage.removeItem('openaiApiKey');
+    }
+
+    if (anthropicKey) {
+        localStorage.setItem('anthropicApiKey', anthropicKey);
+    } else {
+        localStorage.removeItem('anthropicApiKey');
+    }
+
+    if (customEndpoint) {
+        localStorage.setItem('customApiEndpoint', customEndpoint);
+    } else {
+        localStorage.removeItem('customApiEndpoint');
+    }
+
+    if (customKey) {
+        localStorage.setItem('customApiKey', customKey);
+    } else {
+        localStorage.removeItem('customApiKey');
+    }
+
     // Update CONFIG with new keys
     if (openRouterKey) CONFIG.OPENROUTER_API_KEY = openRouterKey;
     if (geminiKey1) CONFIG.GEMINI_API_KEYS[0] = geminiKey1;
     if (geminiKey2) CONFIG.GEMINI_API_KEYS[1] = geminiKey2;
+    if (openAIKey) CONFIG.OPENAI_API_KEY = openAIKey;
+    if (anthropicKey) CONFIG.ANTHROPIC_API_KEY = anthropicKey;
+    if (customEndpoint) CONFIG.CUSTOM_API_ENDPOINT = customEndpoint;
+    if (customKey) CONFIG.CUSTOM_API_KEY = customKey;
 
     showSuccess('API keys saved successfully!');
 }
@@ -1253,10 +1484,18 @@ function resetApiKeys() {
         localStorage.removeItem('openRouterApiKey');
         localStorage.removeItem('geminiApiKey1');
         localStorage.removeItem('geminiApiKey2');
+        localStorage.removeItem('openaiApiKey');
+        localStorage.removeItem('anthropicApiKey');
+        localStorage.removeItem('customApiEndpoint');
+        localStorage.removeItem('customApiKey');
         
         document.getElementById('openrouterApiKey').value = '';
         document.getElementById('geminiApiKey1').value = '';
         document.getElementById('geminiApiKey2').value = '';
+        document.getElementById('openaiApiKey').value = '';
+        document.getElementById('anthropicApiKey').value = '';
+        document.getElementById('customApiEndpoint').value = '';
+        document.getElementById('customApiKey').value = '';
         
         showSuccess('API keys reset to defaults!');
     }
@@ -1267,10 +1506,18 @@ function clearApiKeys() {
         localStorage.removeItem('openRouterApiKey');
         localStorage.removeItem('geminiApiKey1');
         localStorage.removeItem('geminiApiKey2');
+        localStorage.removeItem('openaiApiKey');
+        localStorage.removeItem('anthropicApiKey');
+        localStorage.removeItem('customApiEndpoint');
+        localStorage.removeItem('customApiKey');
         
         document.getElementById('openrouterApiKey').value = '';
         document.getElementById('geminiApiKey1').value = '';
         document.getElementById('geminiApiKey2').value = '';
+        document.getElementById('openaiApiKey').value = '';
+        document.getElementById('anthropicApiKey').value = '';
+        document.getElementById('customApiEndpoint').value = '';
+        document.getElementById('customApiKey').value = '';
         
         showSuccess('All API keys cleared!');
     }
@@ -1386,5 +1633,314 @@ async function testApiKey(keyType) {
     }, 3000);
 }
 
+// Custom Prompts Management
+let customPrompts = [];
+let editingPromptId = null;
+
+// Load custom prompts from localStorage
+function loadCustomPrompts() {
+    const saved = localStorage.getItem('customPrompts');
+    customPrompts = saved ? JSON.parse(saved) : [];
+    renderCustomPrompts();
+}
+
+// Save custom prompts to localStorage
+function saveCustomPrompts() {
+    localStorage.setItem('customPrompts', JSON.stringify(customPrompts));
+}
+
+// Render custom prompts list
+function renderCustomPrompts() {
+    const container = document.getElementById('customPromptsList');
+    if (!container) return;
+    
+    if (customPrompts.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">No custom prompts yet. Click "Add New Prompt" to create one.</p>';
+        return;
+    }
+    
+    container.innerHTML = customPrompts.map(prompt => `
+        <div class="custom-prompt-item">
+            <div class="custom-prompt-header">
+                <div class="custom-prompt-name">${prompt.name}</div>
+                <div class="custom-prompt-actions">
+                    <button class="edit-prompt" onclick="editCustomPrompt('${prompt.id}')" title="Edit prompt">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="use-prompt" onclick="useCustomPrompt('${prompt.id}')" title="Use this prompt">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="delete-prompt" onclick="deleteCustomPrompt('${prompt.id}')" title="Delete prompt">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="custom-prompt-content">${prompt.content.substring(0, 200)}${prompt.content.length > 200 ? '...' : ''}</div>
+            <div class="custom-prompt-meta">
+                <span><i class="fas fa-tag"></i> ${prompt.type}</span>
+                <span><i class="fas fa-calendar"></i> ${new Date(prompt.createdAt).toLocaleDateString()}</span>
+                ${prompt.description ? `<span><i class="fas fa-info-circle"></i> ${prompt.description}</span>` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+// Add new custom prompt
+function addCustomPrompt() {
+    editingPromptId = null;
+    document.getElementById('customPromptModalTitle').textContent = 'Add New Custom Prompt';
+    document.getElementById('customPromptName').value = '';
+    document.getElementById('customPromptDescription').value = '';
+    document.getElementById('customPromptContent').value = '';
+    document.getElementById('customPromptType').value = 'task-generation';
+    document.getElementById('customPromptModal').classList.remove('hidden');
+}
+
+// Edit custom prompt
+function editCustomPrompt(promptId) {
+    const prompt = customPrompts.find(p => p.id === promptId);
+    if (!prompt) return;
+    
+    editingPromptId = promptId;
+    document.getElementById('customPromptModalTitle').textContent = 'Edit Custom Prompt';
+    document.getElementById('customPromptName').value = prompt.name;
+    document.getElementById('customPromptDescription').value = prompt.description || '';
+    document.getElementById('customPromptContent').value = prompt.content;
+    document.getElementById('customPromptType').value = prompt.type;
+    document.getElementById('customPromptModal').classList.remove('hidden');
+}
+
+// Save custom prompt
+function saveCustomPrompt() {
+    const name = document.getElementById('customPromptName').value.trim();
+    const description = document.getElementById('customPromptDescription').value.trim();
+    const content = document.getElementById('customPromptContent').value.trim();
+    const type = document.getElementById('customPromptType').value;
+    
+    if (!name || !content) {
+        alert('Please fill in all required fields.');
+        return;
+    }
+    
+    if (editingPromptId) {
+        // Edit existing prompt
+        const index = customPrompts.findIndex(p => p.id === editingPromptId);
+        if (index !== -1) {
+            customPrompts[index] = {
+                ...customPrompts[index],
+                name,
+                description,
+                content,
+                type,
+                updatedAt: new Date().toISOString()
+            };
+        }
+    } else {
+        // Add new prompt
+        const newPrompt = {
+            id: Date.now().toString(),
+            name,
+            description,
+            content,
+            type,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        customPrompts.push(newPrompt);
+    }
+    
+    saveCustomPrompts();
+    renderCustomPrompts();
+    closeCustomPromptModal();
+    showSuccess(`Custom prompt ${editingPromptId ? 'updated' : 'added'} successfully!`);
+}
+
+// Use custom prompt
+function useCustomPrompt(promptId) {
+    const prompt = customPrompts.find(p => p.id === promptId);
+    if (!prompt) return;
+    
+    if (prompt.type === 'task-generation') {
+        document.getElementById('taskGenerationPrompt').value = prompt.content;
+        showSuccess(`Task generation prompt updated with "${prompt.name}"`);
+    } else if (prompt.type === 'translation') {
+        document.getElementById('translationPromptTemplate').value = prompt.content;
+        showSuccess(`Translation prompt updated with "${prompt.name}"`);
+    } else {
+        // For custom type, show a selection dialog
+        const choice = confirm(`Use "${prompt.name}" as:\n1. Task Generation Prompt\n2. Translation Prompt\n\nClick OK for Task Generation, Cancel for Translation`);
+        if (choice) {
+            document.getElementById('taskGenerationPrompt').value = prompt.content;
+            showSuccess(`Task generation prompt updated with "${prompt.name}"`);
+        } else {
+            document.getElementById('translationPromptTemplate').value = prompt.content;
+            showSuccess(`Translation prompt updated with "${prompt.name}"`);
+        }
+    }
+}
+
+// Delete custom prompt
+function deleteCustomPrompt(promptId) {
+    if (!confirm('Are you sure you want to delete this custom prompt?')) return;
+    
+    customPrompts = customPrompts.filter(p => p.id !== promptId);
+    saveCustomPrompts();
+    renderCustomPrompts();
+    showSuccess('Custom prompt deleted successfully!');
+}
+
+// Close custom prompt modal
+function closeCustomPromptModal() {
+    document.getElementById('customPromptModal').classList.add('hidden');
+    editingPromptId = null;
+}
+
+// Export prompts
+function exportPrompts() {
+    const data = {
+        customPrompts,
+        taskGenerationPrompt: document.getElementById('taskGenerationPrompt').value,
+        translationPrompt: document.getElementById('translationPromptTemplate').value,
+        exportDate: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `plat-skill-prompts-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showSuccess('Prompts exported successfully!');
+}
+
+// Import prompts
+function importPrompts() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                if (data.customPrompts) {
+                    customPrompts = data.customPrompts;
+                    saveCustomPrompts();
+                    renderCustomPrompts();
+                }
+                
+                if (data.taskGenerationPrompt) {
+                    document.getElementById('taskGenerationPrompt').value = data.taskGenerationPrompt;
+                }
+                
+                if (data.translationPrompt) {
+                    document.getElementById('translationPromptTemplate').value = data.translationPrompt;
+                }
+                
+                showSuccess('Prompts imported successfully!');
+            } catch (error) {
+                alert('Error importing prompts. Please check the file format.');
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+// Initialize custom prompts when app loads
+function initCustomPrompts() {
+    loadCustomPrompts();
+    
+    // Add event listener for custom prompt modal close
+    document.getElementById('closeCustomPromptModal')?.addEventListener('click', closeCustomPromptModal);
+    
+    // Close modal when clicking outside
+    document.getElementById('customPromptModal')?.addEventListener('click', (e) => {
+        if (e.target === document.getElementById('customPromptModal')) {
+            closeCustomPromptModal();
+        }
+    });
+}
+
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', initApp);
+
+// Update AI model options based on selected API provider
+function updateAiModelOptions() {
+    const selectedProvider = DOM.apiProviderSelect?.value;
+    const aiModelSelect = DOM.aiModelSelect;
+    
+    if (!aiModelSelect || !selectedProvider) return;
+    
+    // Show/hide options based on provider
+    const options = aiModelSelect.querySelectorAll('option');
+    options.forEach(option => {
+        if (option.value === 'auto') {
+            option.style.display = 'block'; // Always show auto
+            return;
+        }
+        
+        const modelProvider = option.getAttribute('data-provider');
+        if (selectedProvider === 'auto' || selectedProvider === modelProvider || 
+            (selectedProvider === 'openrouter' && modelProvider === 'openrouter') ||
+            (selectedProvider === 'gemini1' && modelProvider === 'gemini') ||
+            (selectedProvider === 'gemini2' && modelProvider === 'gemini') ||
+            (selectedProvider === 'openai' && modelProvider === 'openai') ||
+            (selectedProvider === 'anthropic' && modelProvider === 'anthropic') ||
+            (selectedProvider === 'custom' && modelProvider === 'custom')) {
+            option.style.display = 'block';
+        } else {
+            option.style.display = 'none';
+        }
+    });
+    
+    // If current selection is not available, reset to auto
+    const currentValue = aiModelSelect.value;
+    const currentOption = aiModelSelect.querySelector(`option[value="${currentValue}"]`);
+    if (!currentOption || currentOption.style.display === 'none') {
+        aiModelSelect.value = 'auto';
+    }
+}
+
+// Update API provider based on selected AI model
+function updateApiProviderFromModel() {
+    const selectedModel = DOM.aiModelSelect?.value;
+    const apiProviderSelect = DOM.apiProviderSelect;
+    
+    if (!apiProviderSelect || !selectedModel || selectedModel === 'auto') return;
+    
+    const modelOption = DOM.aiModelSelect.querySelector(`option[value="${selectedModel}"]`);
+    const modelProvider = modelOption?.getAttribute('data-provider');
+    
+    if (modelProvider) {
+        // Map model provider to API provider
+        let apiProvider = 'auto';
+        switch (modelProvider) {
+            case 'gemini':
+                apiProvider = 'gemini1'; // Default to gemini1
+                break;
+            case 'openai':
+                apiProvider = 'openai';
+                break;
+            case 'anthropic':
+                apiProvider = 'anthropic';
+                break;
+            case 'openrouter':
+                apiProvider = 'openrouter';
+                break;
+        }
+        
+        if (apiProviderSelect.value !== apiProvider) {
+            apiProviderSelect.value = apiProvider;
+            updateAiModelOptions(); // Refresh model options
+        }
+    }
+}
