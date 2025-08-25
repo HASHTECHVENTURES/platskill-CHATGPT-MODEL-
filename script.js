@@ -447,7 +447,7 @@ Create a table with exactly ${taskCount} rows in this format:
 | [Low/Medium/High] | [3-7 word hook-like title] | [~50 words: research/technique/tips/Indian case study] | [50-80 words: 5-min text task] | [10-20 words: full sentence benefit] |
 
 Example format:
-| Medium | The 7-Second Rule | Research shows recruiters spend just 7 seconds on first impressions. Indian companies like TCS and Infosys use this principle in their hiring process. Your first impression is like a lightning-fast movie trailer - make it unforgettable! | Write a 30-second elevator pitch for a ${data.program} role. Include your unique value proposition and use confident, engaging language that would make an employer remember you instantly. | This skill transforms you into an interview ninja, making you unforgettable in any professional setting.
+| Medium | The 7-Second Rule | Research shows recruiters spend just 7 seconds on first impressions. Indian companies like TCS and Infosys use this principle. | Write a 30-second elevator pitch for a ${data.program} role. Include your unique value proposition. | This skill transforms you into an interview ninja.
 
 
 
@@ -629,7 +629,7 @@ async function translateText(text, targetLanguage) {
             .replace(/{targetLanguageCode}/g, targetLanguage);
 
         let translatedText = await makeGeminiAPICall(translationPrompt, {
-            maxOutputTokens: 150,
+            maxOutputTokens: 300,
             temperature: 0.2,
             topP: 0.9
         });
@@ -844,7 +844,7 @@ Create a table with exactly {taskCount} rows in this format:
 
 | Skill Level | Heading | Content | Task | Application |
 |-------------|---------|---------|------|-------------|
-| [Low/Medium/High] | [3-7 word hook-like title] | [~50 words: research/technique/tips/Indian case study] | [50-80 words: 5-min text task] | [10-20 words: full sentence benefit] |
+| [Low/Medium/High] | [3-7 word hook-like title] | [25-35 words: research/technique/tips/Indian case study] | [30-50 words: 5-min text task] | [8-15 words: full sentence benefit] |
 
 Make tasks engaging, practical, and specifically tailored for {program} students at {education-level} level. Ensure each task follows the exact word limits and formatting requirements while being engaging and practical.`,
 
@@ -859,6 +859,8 @@ CRITICAL RULES:
 - No repetition of words
 - If it's a task instruction, translate the entire instruction
 - If it's an application/benefit text, translate completely
+- DO NOT CUT or truncate the translation - translate the complete text
+- Ensure the full meaning is preserved
 
 Output only the pure {targetLanguage} translation.`
 
