@@ -781,6 +781,22 @@ body {
     background: #dc3545;
 }
 
+.remove-api-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 12px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.remove-api-btn:hover {
+    background: #c82333;
+}
+
 .api-key-help {
     color: #6c757d;
     font-size: 0.85rem;

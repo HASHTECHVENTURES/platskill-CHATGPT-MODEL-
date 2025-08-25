@@ -1436,6 +1436,95 @@ async function testApiKey(keyType) {
     }, 3000);
 }
 
+// Remove API key functionality
+function removeApiKey(provider) {
+    if (!confirm('Are you sure you want to remove this API key? This action cannot be undone.')) {
+        return;
+    }
+    
+    let inputId, storageKey, message;
+    
+    switch (provider) {
+        case 'openrouter':
+            inputId = 'openrouterApiKey';
+            storageKey = 'openRouterApiKey';
+            message = 'OpenRouter API key removed';
+            break;
+        case 'gemini1':
+            inputId = 'geminiApiKey1';
+            storageKey = 'geminiApiKey1';
+            message = 'Gemini API Key 1 removed';
+            break;
+        case 'gemini2':
+            inputId = 'geminiApiKey2';
+            storageKey = 'geminiApiKey2';
+            message = 'Gemini API Key 2 removed';
+            break;
+        case 'openai':
+            inputId = 'openaiApiKey';
+            storageKey = 'openaiApiKey';
+            message = 'OpenAI API key removed';
+            break;
+        case 'anthropic':
+            inputId = 'anthropicApiKey';
+            storageKey = 'anthropicApiKey';
+            message = 'Anthropic API key removed';
+            break;
+        case 'custom-endpoint':
+            inputId = 'customApiEndpoint';
+            storageKey = 'customApiEndpoint';
+            message = 'Custom API endpoint removed';
+            break;
+        case 'custom-key':
+            inputId = 'customApiKey';
+            storageKey = 'customApiKey';
+            message = 'Custom API key removed';
+            break;
+        default:
+            console.error('Unknown provider:', provider);
+            return;
+    }
+    
+    // Clear the input field
+    const input = document.getElementById(inputId);
+    if (input) {
+        input.value = '';
+    }
+    
+    // Remove from localStorage
+    localStorage.removeItem(storageKey);
+    
+    // Update CONFIG object to reset to default/empty values
+    switch (provider) {
+        case 'openrouter':
+            CONFIG.OPENROUTER_API_KEY = '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';
+            break;
+        case 'gemini1':
+            CONFIG.GEMINI_API_KEYS[0] = 'AIzaSyAh_H6EwL3KOgJ8m086W3OBlCqPo7Khewk';
+            break;
+        case 'gemini2':
+            CONFIG.GEMINI_API_KEYS[1] = 'AIzaSyC0rDffMvwYnTVpAsUI2iMY-N5CqU7lvmU';
+            break;
+        case 'openai':
+            CONFIG.OPENAI_API_KEY = '';
+            break;
+        case 'anthropic':
+            CONFIG.ANTHROPIC_API_KEY = '';
+            break;
+        case 'custom-endpoint':
+            CONFIG.CUSTOM_API_ENDPOINT = '';
+            break;
+        case 'custom-key':
+            CONFIG.CUSTOM_API_KEY = '';
+            break;
+    }
+    
+    // Show success message
+    displaySuccess(message);
+    
+    console.log(`${message} and reset to default`);
+}
+
 // Custom Prompts Management
 let customPrompts = [];
 let editingPromptId = null;

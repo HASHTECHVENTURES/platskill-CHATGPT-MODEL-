@@ -319,23 +319,7 @@
                         </div>
                     </div>
                     
-                    <div class="prompt-section">
-                        <h3><i class="fas fa-cog"></i> API Configuration</h3>
-                        <div class="api-info">
-                            <div class="api-item">
-                                <strong>Primary API:</strong> OpenRouter (Gemini 2.5 Pro)
-                            </div>
-                            <div class="api-item">
-                                <strong>Fallback API:</strong> Google Gemini API
-                            </div>
-                            <div class="api-item">
-                                <strong>Model:</strong> google/gemini-2.5-pro
-                            </div>
-                            <div class="api-item">
-                                <strong>Temperature:</strong> 0.7 (Task Generation), 0.3 (Translation)
-                            </div>
-                        </div>
-                    </div>
+
                     
                     <div class="prompt-section">
                         <h3><i class="fas fa-key"></i> API Keys Management</h3>
@@ -349,6 +333,9 @@
                                     </button>
                                     <button class="test-api-btn" onclick="testApiKey('openrouter')">
                                         <i class="fas fa-vial"></i> Test
+                                    </button>
+                                    <button class="remove-api-btn" onclick="removeApiKey('openrouter')" title="Remove API key">
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
                                 <small class="api-key-help">Get your key from <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a></small>
@@ -364,6 +351,9 @@
                                     <button class="test-api-btn" onclick="testApiKey('gemini1')">
                                         <i class="fas fa-vial"></i> Test
                                     </button>
+                                    <button class="remove-api-btn" onclick="removeApiKey('gemini1')" title="Remove API key">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                                 <small class="api-key-help">Get your key from <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a></small>
                             </div>
@@ -377,6 +367,9 @@
                                     </button>
                                     <button class="test-api-btn" onclick="testApiKey('gemini2')">
                                         <i class="fas fa-vial"></i> Test
+                                    </button>
+                                    <button class="remove-api-btn" onclick="removeApiKey('gemini2')" title="Remove API key">
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
                                 <small class="api-key-help">Optional backup key for better reliability</small>
@@ -392,6 +385,9 @@
                                     <button class="test-api-btn" onclick="testApiKey('openai')">
                                         <i class="fas fa-vial"></i> Test
                                     </button>
+                                    <button class="remove-api-btn" onclick="removeApiKey('openai')" title="Remove API key">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                                 <small class="api-key-help">Get your key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a></small>
                             </div>
@@ -406,6 +402,9 @@
                                     <button class="test-api-btn" onclick="testApiKey('anthropic')">
                                         <i class="fas fa-vial"></i> Test
                                     </button>
+                                    <button class="remove-api-btn" onclick="removeApiKey('anthropic')" title="Remove API key">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                                 <small class="api-key-help">Get your key from <a href="https://console.anthropic.com/" target="_blank" rel="noopener">Anthropic Console</a></small>
                             </div>
@@ -417,6 +416,9 @@
                                     <button class="test-api-btn" onclick="testApiKey('custom')">
                                         <i class="fas fa-vial"></i> Test
                                     </button>
+                                    <button class="remove-api-btn" onclick="removeApiKey('custom-endpoint')" title="Remove API endpoint">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                                 <small class="api-key-help">Enter your custom API endpoint URL</small>
                             </div>
@@ -427,6 +429,9 @@
                                     <input type="password" id="customApiKey" class="api-key-input" placeholder="Enter your custom API key">
                                     <button class="toggle-password" onclick="togglePasswordVisibility('customApiKey')" title="Toggle password visibility">
                                         <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="remove-api-btn" onclick="removeApiKey('custom-key')" title="Remove API key">
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
                                 <small class="api-key-help">API key for your custom endpoint</small>
