@@ -483,9 +483,8 @@ async function displayResults(data) {
     // Store original tasks
     window.originalTasks = data.tasks;
     
-    // Get selected language from results dropdown
     // Populate table with tasks
-        populateTasksTable(data.tasks);
+    populateTasksTable(data.tasks);
     
     DOM.resultsDiv.classList.remove('hidden');
     DOM.resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
