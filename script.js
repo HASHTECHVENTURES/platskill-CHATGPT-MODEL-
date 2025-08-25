@@ -620,19 +620,13 @@ async function translateText(text, targetLanguage) {
 
         const targetLanguageName = languageNames[targetLanguage];
         
-        const translationPrompt = `Translate this text to ${targetLanguageName}: "${text}"
-
-CRITICAL RULES:
-- Translate EVERYTHING to ${targetLanguageName} - no English words allowed
-- Use native script only
-- Translate ALL parts including names to appropriate ${targetLanguageName} equivalent
-- No explanations, quotes, or extra text
-- Keep same meaning and tone
-- No repetition of words
-- If it's a task instruction, translate the entire instruction
-- If it's an application/benefit text, translate completely
-
-Output only the pure ${targetLanguageName} translation.`;
+        // Get custom translation prompt or use default
+        const customTranslationPrompt = document.getElementById('translationPrompt')?.value || defaultPrompts.translation;
+        
+        const translationPrompt = customTranslationPrompt
+            .replace(/{text}/g, text)
+            .replace(/{targetLanguage}/g, targetLanguageName)
+            .replace(/{targetLanguageCode}/g, targetLanguage);
 
         let translatedText = await makeGeminiAPICall(translationPrompt, {
             maxOutputTokens: 150,
@@ -854,6 +848,20 @@ Create a table with exactly {taskCount} rows in this format:
 
 Make tasks engaging, practical, and specifically tailored for {program} students at {education-level} level. Ensure each task follows the exact word limits and formatting requirements while being engaging and practical.`,
 
+        translation: `Translate this text to {targetLanguage}: "{text}"
+
+CRITICAL RULES:
+- Translate EVERYTHING to {targetLanguage} - no English words allowed
+- Use native script only
+- Translate ALL parts including names to appropriate {targetLanguage} equivalent
+- No explanations, quotes, or extra text
+- Keep same meaning and tone
+- No repetition of words
+- If it's a task instruction, translate the entire instruction
+- If it's an application/benefit text, translate completely
+
+Output only the pure {targetLanguage} translation.`
+
 
     };
     
@@ -863,12 +871,19 @@ Make tasks engaging, practical, and specifically tailored for {program} students
 
 function loadSavedPrompts() {
     const savedTaskPrompt = localStorage.getItem('customTaskPrompt');
+    const savedTranslationPrompt = localStorage.getItem('customTranslationPrompt');
 
     
     if (savedTaskPrompt) {
         document.getElementById('taskGenerationPrompt').value = savedTaskPrompt;
     } else {
         document.getElementById('taskGenerationPrompt').value = defaultPrompts.taskGeneration;
+    }
+    
+    if (savedTranslationPrompt) {
+        document.getElementById('translationPrompt').value = savedTranslationPrompt;
+    } else {
+        document.getElementById('translationPrompt').value = defaultPrompts.translation;
     }
     
 
@@ -907,6 +922,8 @@ function savePrompt(elementId) {
     // Save to localStorage
         if (elementId === 'taskGenerationPrompt') {
         localStorage.setItem('customTaskPrompt', element.value);
+    } else if (elementId === 'translationPrompt') {
+        localStorage.setItem('customTranslationPrompt', element.value);
     }
     
     element.classList.remove('editing');
@@ -927,6 +944,9 @@ function cancelEdit(elementId) {
     if (elementId === 'taskGenerationPrompt') {
         const saved = localStorage.getItem('customTaskPrompt') || defaultPrompts.taskGeneration;
         element.value = saved;
+    } else if (elementId === 'translationPrompt') {
+        const saved = localStorage.getItem('customTranslationPrompt') || defaultPrompts.translation;
+        element.value = saved;
     }
     
     element.classList.remove('editing');
@@ -938,7 +958,9 @@ function cancelEdit(elementId) {
 function resetToDefaultPrompts() {
     if (confirm('Are you sure you want to reset to default prompts? This will clear all custom changes.')) {
         localStorage.removeItem('customTaskPrompt');
+        localStorage.removeItem('customTranslationPrompt');
         document.getElementById('taskGenerationPrompt').value = defaultPrompts.taskGeneration;
+        document.getElementById('translationPrompt').value = defaultPrompts.translation;
         
         showSuccess('Prompts reset to defaults!');
     }
@@ -1472,6 +1494,7 @@ function exportPrompts() {
     const data = {
         customPrompts,
         taskGenerationPrompt: document.getElementById('taskGenerationPrompt').value,
+        translationPrompt: document.getElementById('translationPrompt').value,
 
         exportDate: new Date().toISOString()
     };
@@ -1511,6 +1534,10 @@ function importPrompts() {
                 
                 if (data.taskGenerationPrompt) {
                     document.getElementById('taskGenerationPrompt').value = data.taskGenerationPrompt;
+                }
+                
+                if (data.translationPrompt) {
+                    document.getElementById('translationPrompt').value = data.translationPrompt;
                 }
                 
                 
