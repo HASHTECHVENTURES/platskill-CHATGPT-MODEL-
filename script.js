@@ -85,7 +85,7 @@ function loadConfigFromStorage() {
     }
 }
 
-// Translation cache for instant switching
+
 
 
 // DOM Elements
@@ -439,30 +439,9 @@ Create a table with exactly ${taskCount} rows in this format:
 Example format:
 | Medium | The 7-Second Rule | Research shows recruiters spend just 7 seconds on first impressions. Indian companies like TCS and Infosys use this principle in their hiring process. Your first impression is like a lightning-fast movie trailer - make it unforgettable! | Write a 30-second elevator pitch for a ${data.program} role. Include your unique value proposition and use confident, engaging language that would make an employer remember you instantly. | This skill transforms you into an interview ninja, making you unforgettable in any professional setting.
 
-TRANSLATION COMPATIBILITY GUIDELINES (GPT-OSS-20B Rulebook Integration):
-- **Faithful meaning**: Preserve tone/intent; avoid literal-only translation
-- **Placeholders & tokens**: Keep {} %s <b> etc. unchanged
-- **Numbers**: Use Western digits (0–9)
-- **Verb-final**: Ensure content works with SOV structure in Indic languages
-- **Articles**: Present in English; will be absent in Indic languages
-- **Honorifics**: Respect politeness levels across cultures
-- **Consistency**: Use same term consistently
-- **Style**: Always formal-neutral, easy to understand
-- **Script Safety**: Ensure content will work in native scripts
-- **No quotes**: Avoid unnecessary quotation marks
-- **No repetition**: Avoid repeating the same words unnecessarily
-- **Hook-style**: Make headings catchy and hook-like in any language
 
-LANGUAGE-SPECIFIC CONSIDERATIONS:
-- **Hindi**: Content should work with SOV structure, no articles, honorific forms
-- **Bengali**: Compatible with SOV, classifiers, postpositions
-- **Telugu**: Works with agglutinative structure, case markers
-- **Tamil**: Compatible with agglutinative suffixes, urai-nadai style
-- **Marathi**: Works with gender agreement, postpositions
-- **Malayalam**: Compatible with agglutinative structure, honorifics
-- **Kannada**: Works with case inflection, politeness distinctions
 
-Make tasks engaging, practical, and specifically tailored for ${data.program} students at ${data['education-level']} level. Ensure each task follows the exact word limits and formatting requirements while being fully compatible with translation to all Indian languages.`;
+Make tasks engaging, practical, and specifically tailored for ${data.program} students at ${data['education-level']} level. Ensure each task follows the exact word limits and formatting requirements while being engaging and practical.`;
 }
 
 // Parse employability tasks from AI response
@@ -501,7 +480,7 @@ async function displayResults(data) {
         return;
     }
     
-    // Store original tasks for translation
+    // Store original tasks
     window.originalTasks = data.tasks;
     
     // Get selected language from results dropdown
