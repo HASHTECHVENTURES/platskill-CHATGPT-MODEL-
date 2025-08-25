@@ -49,16 +49,7 @@ const CONFIG = {
     },
     
     REQUIRED_FIELDS: ['name', 'education-level', 'education-year', 'semester', 'program', 'main-skill', 'skill-level', 'task-count'],
-    SUPPORTED_LANGUAGES: {
-        'en': 'English',
-        'hi': 'Hindi',
-        'bn': 'Bengali',
-        'te': 'Telugu',
-        'ta': 'Tamil',
-        'mr': 'Marathi',
-        'ml': 'Malayalam',
-        'kn': 'Kannada'
-    }
+
 };
 
 // Load saved API keys on startup
@@ -95,7 +86,7 @@ function loadConfigFromStorage() {
 }
 
 // Translation cache for instant switching
-const translationCache = new Map();
+
 
 // DOM Elements
 const DOM = {
@@ -105,8 +96,8 @@ const DOM = {
     tasksTableBody: null,
     newTasksBtn: null,
     downloadExcelBtn: null,
-    translateTasksBtn: null,
-    preferredLanguageSelect: null,
+
+
     showPromptsBtn: null,
     promptsModal: null,
     closePromptsModal: null,
@@ -120,8 +111,8 @@ const DOM = {
         this.tasksTableBody = document.getElementById('tasksTableBody');
         this.newTasksBtn = document.getElementById('newTasks');
         this.downloadExcelBtn = document.getElementById('downloadExcel');
-        this.translateTasksBtn = document.getElementById('translateTasks');
-        this.preferredLanguageSelect = document.getElementById('preferred-language');
+
+
         this.showPromptsBtn = document.getElementById('show-prompts-btn');
         this.promptsModal = document.getElementById('promptsModal');
         this.closePromptsModal = document.getElementById('closePromptsModal');
@@ -141,7 +132,7 @@ function initApp() {
     DOM.form?.addEventListener('submit', handleFormSubmit);
     DOM.newTasksBtn?.addEventListener('click', resetForm);
     DOM.downloadExcelBtn?.addEventListener('click', downloadExcel);
-    DOM.translateTasksBtn?.addEventListener('click', handleTranslateTasks);
+
     DOM.showPromptsBtn?.addEventListener('click', showPromptsModal);
     DOM.closePromptsModal?.addEventListener('click', hidePromptsModal);
     DOM.resetPromptsBtn?.addEventListener('click', resetToDefaultPrompts);
@@ -392,7 +383,7 @@ HEADING REQUIREMENTS (3-7 words):
 - Interesting, hook-like with idioms/quotes
 - Related to the task/content
 - Examples: "Think Like a CEO", "The 7-Second Rule", "Master the Art of..."
-- **Translation-Ready**: Create headings that will translate well to all Indian languages (Hindi, Bengali, Telugu, Tamil, Marathi, Malayalam, Kannada)
+
 - **No Repetition**: Avoid repeating words unnecessarily
 - **Hook-Style**: Make them catchy and memorable in any language
 
@@ -514,48 +505,8 @@ async function displayResults(data) {
     window.originalTasks = data.tasks;
     
     // Get selected language from results dropdown
-    const selectedLanguage = DOM.preferredLanguageSelect.value;
-    
-    if (selectedLanguage === 'en') {
-        // Show in English
+    // Populate table with tasks
         populateTasksTable(data.tasks);
-        updateResultsHeader('English');
-    } else {
-        // Auto-translate to selected language
-        try {
-            // Show loading state for translation
-            const progressDiv = document.createElement('div');
-            progressDiv.id = 'translationProgress';
-            progressDiv.innerHTML = `
-                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                            background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-                            z-index: 10000; text-align: center;">
-                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #667eea; margin-bottom: 10px;"></i>
-                    <h3>Generating Tasks in ${CONFIG.SUPPORTED_LANGUAGES[selectedLanguage]}</h3>
-                    <p>Please wait while we translate ${data.tasks.length} tasks...</p>
-                </div>
-            `;
-            document.body.appendChild(progressDiv);
-            
-            const translatedTasks = await translateTasks(data.tasks, selectedLanguage);
-            
-            // Remove progress indicator
-            document.body.removeChild(progressDiv);
-            
-            // Populate table with translated tasks
-            populateTasksTable(translatedTasks);
-            updateResultsHeader(CONFIG.SUPPORTED_LANGUAGES[selectedLanguage]);
-            
-        } catch (error) {
-            console.error('Auto-translation failed:', error);
-            // Fallback to English
-            populateTasksTable(data.tasks);
-            updateResultsHeader('English');
-        }
-    }
-    
-    // Start pre-translating to all languages in background for faster switching
-    preTranslateAllLanguages(data.tasks);
     
     DOM.resultsDiv.classList.remove('hidden');
     DOM.resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -578,171 +529,9 @@ function populateTasksTable(tasks) {
     });
 }
 
-// Translate tasks with optimized batch processing
-async function translateTasks(tasks, targetLanguage) {
-    try {
-        if (targetLanguage === 'en') {
-            return tasks;
-        }
-
-        console.log(`Starting optimized translation of ${tasks.length} tasks to ${targetLanguage}`);
-        
-        // Create all translation promises at once for parallel processing
-        const translationPromises = tasks.map(async (task, index) => {
-            try {
-                console.log(`Queuing translation for task ${index + 1}: ${task.heading.substring(0, 30)}...`);
-                
-                // Translate all fields in parallel for each task
-                const [heading, content, taskText, application] = await Promise.all([
-                    translateText(task.heading, targetLanguage),
-                    translateText(task.content, targetLanguage),
-                    translateText(task.task, targetLanguage),
-                    translateText(task.application, targetLanguage)
-                ]);
-                
-                return {
-                    skillLevel: task.skillLevel,
-                    heading,
-                    content,
-                    task: taskText,
-                    application
-                };
-                
-            } catch (taskError) {
-                console.error(`Error translating task ${index + 1}: ${task.heading}`, taskError);
-                return task; // Return original if translation fails
-            }
-        });
-        
-        // Process all tasks in parallel with controlled concurrency and progress updates
-        const batchSize = 2; // Reduced batch size for better performance
-        const translatedTasks = [];
-        let completedTasks = 0;
-        
-        for (let i = 0; i < translationPromises.length; i += batchSize) {
-            const batch = translationPromises.slice(i, i + batchSize);
-            console.log(`Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(translationPromises.length/batchSize)}`);
-            
-            // Update progress
-            if (window.updateTranslationProgress) {
-                window.updateTranslationProgress(completedTasks, tasks.length, `Processing batch ${Math.floor(i/batchSize) + 1}...`);
-            }
-            
-            const batchResults = await Promise.all(batch);
-            translatedTasks.push(...batchResults);
-            completedTasks += batchResults.length;
-            
-            // Update progress after batch completion
-            if (window.updateTranslationProgress) {
-                window.updateTranslationProgress(completedTasks, tasks.length, `Completed ${completedTasks} of ${tasks.length} tasks`);
-            }
-            
-            // Minimal delay between batches
-            if (i + batchSize < translationPromises.length) {
-                await new Promise(resolve => setTimeout(resolve, 200)); // Reduced delay
-            }
-        }
-        
-        console.log(`Successfully translated ${translatedTasks.length} tasks to ${targetLanguage}`);
-        return translatedTasks;
-    } catch (error) {
-        console.error('Error translating tasks:', error);
-        return tasks;
-    }
-}
-
-// Clean up translation output
-function cleanTranslationOutput(text, targetLanguage) {
-    // Remove quotes and extra text
-    text = text.replace(/^["""']|["""']$/g, '');
-    text = text.split('\n')[0].trim();
-    
-    // Remove explanations (anything after ** or * or -)
-    text = text.replace(/\*\*.*?\*\*/g, '');
-    text = text.replace(/\*.*?\*/g, '');
-    text = text.replace(/-.*$/g, '');
-    
-    // Remove any remaining quotes that might be inside the text
-    text = text.replace(/^["""']|["""']$/g, '');
-    
-    return text.trim();
-}
 
 
 
-// Translate text using Gemini API with caching
-async function translateText(text, targetLanguage) {
-    try {
-        if (targetLanguage === 'en') {
-            return text;
-        }
-
-        // Check cache first for instant switching
-        const cacheKey = `${text}_${targetLanguage}`;
-        if (translationCache.has(cacheKey)) {
-            console.log(`Cache hit for: ${cacheKey}`);
-            return translationCache.get(cacheKey);
-        }
-
-        const languageNames = {
-            'hi': 'Hindi',
-            'bn': 'Bengali', 
-            'te': 'Telugu',
-            'ta': 'Tamil',
-            'mr': 'Marathi',
-            'ml': 'Malayalam',
-            'kn': 'Kannada'
-        };
-
-        const targetLanguageName = languageNames[targetLanguage];
-        
-        const translationPrompt = `Translate this text to ${targetLanguageName}: "${text}"
-
-CRITICAL RULES:
-- Translate EVERYTHING to ${targetLanguageName} - no English words allowed
-- Use native script only
-- Translate ALL parts including names like "Sujal" to appropriate ${targetLanguageName} equivalent
-- No explanations, quotes, or extra text
-- Keep same meaning and tone
-- No repetition of words
-- If it's a task instruction, translate the entire instruction
-- If it's an application/benefit text, translate completely
-
-Output only the pure ${targetLanguageName} translation.`;
-
-        // Add timeout to prevent hanging
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Translation timeout')), 15000) // 15 second timeout
-        );
-        
-        const translationPromise = makeGeminiAPICall(translationPrompt, {
-            maxOutputTokens: 150, // Reduced for faster response
-            temperature: 0.2, // Lower temperature for more consistent translations
-            topP: 0.9
-        });
-        
-        let translatedText = await Promise.race([translationPromise, timeoutPromise]);
-        
-        // Clean up translation output
-        translatedText = cleanTranslationOutput(translatedText, targetLanguageName);
-        
-        // If translation is empty or same as original, return original
-        if (!translatedText || translatedText === text) {
-            console.log(`Translation failed or empty for: "${text}"`);
-            return text;
-        }
-        
-        console.log(`Translated: "${text}" -> "${translatedText}" (${targetLanguageName})`);
-        
-        // Cache the translation for instant switching
-        translationCache.set(cacheKey, translatedText);
-        
-        return translatedText;
-    } catch (error) {
-        console.error('Translation error:', error);
-        return text; // Return original text if translation fails
-    }
-}
 
 
 
@@ -759,144 +548,19 @@ function downloadExcel() {
     }
 }
 
-// Handle translation button click
-async function handleTranslateTasks() {
-    if (!window.originalTasks) {
-        displayError('No tasks available for translation.');
-        return;
-    }
-    
-    const selectedLanguage = DOM.preferredLanguageSelect.value;
-    
-    if (selectedLanguage === 'en') {
-        // Instant switch back to original English tasks
-        populateTasksTable(window.originalTasks);
-        updateResultsHeader('English');
-        return;
-    }
-    
-    try {
-        // Show loading state for translation
-        DOM.translateTasksBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Translating...';
-        DOM.translateTasksBtn.disabled = true;
-        
-        // Show progress message with real-time updates
-        const progressDiv = document.createElement('div');
-        progressDiv.id = 'translationProgress';
-        progressDiv.innerHTML = `
-            <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                        background: white; padding: 30px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-                        z-index: 10000; text-align: center; min-width: 350px;">
-                <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: #667eea; margin-bottom: 15px;"></i>
-                <h3 style="margin: 0 0 10px 0; color: #333;">Translating Tasks</h3>
-                <p style="margin: 0 0 5px 0; color: #666;">Translating ${window.originalTasks.length} tasks to ${CONFIG.SUPPORTED_LANGUAGES[selectedLanguage]}...</p>
-                <div id="translationProgressBar" style="width: 100%; height: 6px; background: #f0f0f0; border-radius: 3px; margin: 15px 0;">
-                    <div id="translationProgressFill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 3px; transition: width 0.3s ease;"></div>
-                </div>
-                <p id="translationProgressText" style="font-size: 0.9rem; color: #888; margin: 0;">Starting translation...</p>
-            </div>
-        `;
-        document.body.appendChild(progressDiv);
-        
-        // Create progress update function
-        window.updateTranslationProgress = (current, total, message) => {
-            const progressFill = document.getElementById('translationProgressFill');
-            const progressText = document.getElementById('translationProgressText');
-            if (progressFill && progressText) {
-                const percentage = Math.round((current / total) * 100);
-                progressFill.style.width = `${percentage}%`;
-                progressText.textContent = message || `Translated ${current} of ${total} tasks...`;
-            }
-        };
-        
-        console.log('Translating tasks to:', selectedLanguage);
-        const translatedTasks = await translateTasks(window.originalTasks, selectedLanguage);
-        console.log('Translation completed');
-        
-        // Remove progress indicator
-        document.body.removeChild(progressDiv);
-        
-        // Populate table with translated tasks
-        populateTasksTable(translatedTasks);
-        
-        // Update results header with language info
-        updateResultsHeader(CONFIG.SUPPORTED_LANGUAGES[selectedLanguage]);
-        
-        // Show success message
-        showSuccess(`Successfully translated ${translatedTasks.length} tasks to ${CONFIG.SUPPORTED_LANGUAGES[selectedLanguage]}!`);
-        
-    } catch (error) {
-        console.error('Translation failed:', error);
-        displayError('Translation failed. Please try again.');
-        
-        // Remove progress indicator if it exists
-        const progressDiv = document.getElementById('translationProgress');
-        if (progressDiv) {
-            document.body.removeChild(progressDiv);
-        }
-    } finally {
-        // Reset button state
-        DOM.translateTasksBtn.innerHTML = '<i class="fas fa-language"></i> Translate';
-        DOM.translateTasksBtn.disabled = false;
-    }
-}
 
-// Pre-translate all languages in background for faster switching
-async function preTranslateAllLanguages(tasks) {
-    const languages = ['hi', 'bn', 'te', 'ta', 'mr', 'ml', 'kn'];
-    
-    // Limit pre-translation for large task counts to avoid overwhelming the API
-    const maxTasksForPreTranslation = 6;
-    const tasksToPreTranslate = tasks.slice(0, maxTasksForPreTranslation);
-    
-    console.log(`Pre-translating ${tasksToPreTranslate.length} tasks to ${languages.length} languages...`);
-    
-    // Start background translation for all languages
-    languages.forEach(async (lang) => {
-        try {
-            console.log(`Pre-translating to ${lang}...`);
-            for (const task of tasksToPreTranslate) {
-                // Pre-translate each field with error handling
-                try {
-                    await translateText(task.heading, lang);
-                    await new Promise(resolve => setTimeout(resolve, 200)); // Small delay
-                    await translateText(task.content, lang);
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                    await translateText(task.task, lang);
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                    await translateText(task.application, lang);
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                } catch (fieldError) {
-                    console.error(`Error pre-translating field for ${lang}:`, fieldError);
-                }
-            }
-            console.log(`Pre-translation to ${lang} completed`);
-        } catch (error) {
-            console.error(`Pre-translation to ${lang} failed:`, error);
-        }
-    });
-}
 
-// Update results header with language info
-function updateResultsHeader(language) {
-    const resultsHeader = DOM.resultsDiv.querySelector('.results-header h2');
-    if (resultsHeader) {
-        if (language === 'English') {
-            resultsHeader.innerHTML = '<i class="fas fa-tasks"></i> Your Employability Tasks';
-        } else {
-            resultsHeader.innerHTML = `<i class="fas fa-tasks"></i> Your Employability Tasks <span style="font-size: 0.8rem; color: #28a745; margin-left: 10px;">(${language})</span>`;
-        }
-    }
-}
+
+
+
 
 // Reset form
 function resetForm() {
     DOM.form.reset();
     DOM.resultsDiv.classList.add('hidden');
     DOM.form.style.display = 'block';
-    // Clear stored tasks and cache
+    // Clear stored tasks
     window.originalTasks = null;
-    translationCache.clear();
 }
 
 // Show loading
@@ -1022,21 +686,9 @@ Create a table with exactly {taskCount} rows in this format:
 |-------------|---------|---------|------|-------------|
 | [Low/Medium/High] | [3-7 word hook-like title] | [~50 words: research/technique/tips/Indian case study] | [50-80 words: 5-min text task] | [10-20 words: full sentence benefit] |
 
-Make tasks engaging, practical, and specifically tailored for {program} students at {education-level} level. Ensure each task follows the exact word limits and formatting requirements while being fully compatible with translation to all Indian languages.`,
+Make tasks engaging, practical, and specifically tailored for {program} students at {education-level} level. Ensure each task follows the exact word limits and formatting requirements while being engaging and practical.`,
 
-        translation: `Translate this text to {targetLanguageName}: "{text}"
 
-CRITICAL RULES:
-- Translate EVERYTHING to {targetLanguageName} - no English words allowed
-- Use native script only
-- Translate ALL parts including names like "Sujal" to appropriate {targetLanguageName} equivalent
-- No explanations, quotes, or extra text
-- Keep same meaning and tone
-- No repetition of words
-- If it's a task instruction, translate the entire instruction
-- If it's an application/benefit text, translate completely
-
-Output only the pure {targetLanguageName} translation.`
     };
     
     // Load saved prompts or use defaults
@@ -1045,7 +697,7 @@ Output only the pure {targetLanguageName} translation.`
 
 function loadSavedPrompts() {
     const savedTaskPrompt = localStorage.getItem('customTaskPrompt');
-    const savedTranslationPrompt = localStorage.getItem('customTranslationPrompt');
+
     
     if (savedTaskPrompt) {
         document.getElementById('taskGenerationPrompt').value = savedTaskPrompt;
@@ -1053,11 +705,7 @@ function loadSavedPrompts() {
         document.getElementById('taskGenerationPrompt').value = defaultPrompts.taskGeneration;
     }
     
-    if (savedTranslationPrompt) {
-        document.getElementById('translationPromptTemplate').value = savedTranslationPrompt;
-    } else {
-        document.getElementById('translationPromptTemplate').value = defaultPrompts.translation;
-    }
+
 }
 
 // Show prompts modal
@@ -1091,10 +739,8 @@ function savePrompt(elementId) {
     const cancelBtn = element.parentElement.querySelector('.cancel-btn');
     
     // Save to localStorage
-    if (elementId === 'taskGenerationPrompt') {
+        if (elementId === 'taskGenerationPrompt') {
         localStorage.setItem('customTaskPrompt', element.value);
-    } else if (elementId === 'translationPromptTemplate') {
-        localStorage.setItem('customTranslationPrompt', element.value);
     }
     
     element.classList.remove('editing');
@@ -1115,9 +761,6 @@ function cancelEdit(elementId) {
     if (elementId === 'taskGenerationPrompt') {
         const saved = localStorage.getItem('customTaskPrompt') || defaultPrompts.taskGeneration;
         element.value = saved;
-    } else if (elementId === 'translationPromptTemplate') {
-        const saved = localStorage.getItem('customTranslationPrompt') || defaultPrompts.translation;
-        element.value = saved;
     }
     
     element.classList.remove('editing');
@@ -1129,10 +772,7 @@ function cancelEdit(elementId) {
 function resetToDefaultPrompts() {
     if (confirm('Are you sure you want to reset to default prompts? This will clear all custom changes.')) {
         localStorage.removeItem('customTaskPrompt');
-        localStorage.removeItem('customTranslationPrompt');
-        
         document.getElementById('taskGenerationPrompt').value = defaultPrompts.taskGeneration;
-        document.getElementById('translationPromptTemplate').value = defaultPrompts.translation;
         
         showSuccess('Prompts reset to defaults!');
     }
@@ -1167,63 +807,7 @@ function createEmployabilityPrompt(data) {
         .replace(/{main-skill}/g, data['main-skill']);
 }
 
-// Override the translateText function to use custom translation prompt
-async function translateText(text, targetLanguage) {
-    try {
-        if (targetLanguage === 'en') {
-            return text;
-        }
 
-        // Check cache first for instant switching
-        const cacheKey = `${text}_${targetLanguage}`;
-        if (translationCache.has(cacheKey)) {
-            console.log(`Cache hit for: ${cacheKey}`);
-            return translationCache.get(cacheKey);
-        }
-
-        const languageNames = {
-            'hi': 'Hindi',
-            'bn': 'Bengali', 
-            'te': 'Telugu',
-            'ta': 'Tamil',
-            'mr': 'Marathi',
-            'ml': 'Malayalam',
-            'kn': 'Kannada'
-        };
-
-        const targetLanguageName = languageNames[targetLanguage];
-        const customTranslationPrompt = document.getElementById('translationPromptTemplate').value || defaultPrompts.translation;
-        
-        const translationPrompt = customTranslationPrompt
-            .replace(/{targetLanguageName}/g, targetLanguageName)
-            .replace(/{text}/g, text);
-
-        let translatedText = await makeGeminiAPICall(translationPrompt, {
-            maxOutputTokens: 200,
-            temperature: 0.3,
-            topP: 0.8
-        });
-        
-        // Clean up translation output
-        translatedText = cleanTranslationOutput(translatedText, targetLanguageName);
-        
-        // If translation is empty or same as original, return original
-        if (!translatedText || translatedText === text) {
-            console.log(`Translation failed or empty for: "${text}"`);
-            return text;
-        }
-        
-        console.log(`Translated: "${text}" -> "${translatedText}" (${targetLanguageName})`);
-        
-        // Cache the translation for instant switching
-        translationCache.set(cacheKey, translatedText);
-        
-        return translatedText;
-    } catch (error) {
-        console.error('Translation error:', error);
-        return text; // Return original text if translation fails
-    }
-}
 
 // API Key Management Functions
 function loadSavedApiKeys() {
@@ -1522,7 +1106,7 @@ function removeApiKey(provider) {
             break;
         default:
             console.error('Unknown provider:', provider);
-            return;
+        return;
     }
     
     // Clear the input field
@@ -1695,19 +1279,10 @@ function useCustomPrompt(promptId) {
     if (prompt.type === 'task-generation') {
         document.getElementById('taskGenerationPrompt').value = prompt.content;
         showSuccess(`Task generation prompt updated with "${prompt.name}"`);
-    } else if (prompt.type === 'translation') {
-        document.getElementById('translationPromptTemplate').value = prompt.content;
-        showSuccess(`Translation prompt updated with "${prompt.name}"`);
-    } else {
-        // For custom type, show a selection dialog
-        const choice = confirm(`Use "${prompt.name}" as:\n1. Task Generation Prompt\n2. Translation Prompt\n\nClick OK for Task Generation, Cancel for Translation`);
-        if (choice) {
-            document.getElementById('taskGenerationPrompt').value = prompt.content;
-            showSuccess(`Task generation prompt updated with "${prompt.name}"`);
         } else {
-            document.getElementById('translationPromptTemplate').value = prompt.content;
-            showSuccess(`Translation prompt updated with "${prompt.name}"`);
-        }
+        // For custom type, show a selection dialog
+        document.getElementById('taskGenerationPrompt').value = prompt.content;
+        showSuccess(`Task generation prompt updated with "${prompt.name}"`);
     }
 }
 
@@ -1732,7 +1307,7 @@ function exportPrompts() {
     const data = {
         customPrompts,
         taskGenerationPrompt: document.getElementById('taskGenerationPrompt').value,
-        translationPrompt: document.getElementById('translationPromptTemplate').value,
+
         exportDate: new Date().toISOString()
     };
     
@@ -1773,9 +1348,7 @@ function importPrompts() {
                     document.getElementById('taskGenerationPrompt').value = data.taskGenerationPrompt;
                 }
                 
-                if (data.translationPrompt) {
-                    document.getElementById('translationPromptTemplate').value = data.translationPrompt;
-                }
+                
                 
                 showSuccess('Prompts imported successfully!');
             } catch (error) {
