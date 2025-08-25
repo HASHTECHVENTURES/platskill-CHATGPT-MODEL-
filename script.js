@@ -48,7 +48,7 @@ const CONFIG = {
         'codellama-34b': { provider: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions' }
     },
     
-    REQUIRED_FIELDS: ['name', 'education-level', 'education-year', 'semester', 'program', 'main-skill', 'skill-level', 'task-count'],
+    REQUIRED_FIELDS: ['education-level', 'education-year', 'semester', 'program', 'main-skill', 'skill-level', 'task-count'],
     SUPPORTED_LANGUAGES: {
         'en': 'English',
         'hi': 'Hindi',
@@ -382,7 +382,6 @@ function createEmployabilityPrompt(data) {
     return `Create ${taskCount} employability tasks following these STRICT guidelines:
 
 STUDENT PROFILE:
-- Name: ${data.name}
 - Education Level: ${data['education-level']}
 - Education Year: ${data['education-year']}
 - Semester: ${data['semester']}
@@ -799,7 +798,6 @@ function initializeDefaultPrompts() {
         taskGeneration: `Create {taskCount} employability tasks following these STRICT guidelines:
 
 STUDENT PROFILE:
-- Name: {name}
 - Education Level: {education-level}
 - Education Year: {education-year}
 - Semester: {semester}
@@ -967,7 +965,6 @@ function createEmployabilityPrompt(data) {
     // Replace placeholders with actual data
     return customPrompt
         .replace(/{taskCount}/g, data['task-count'])
-        .replace(/{name}/g, data.name)
         .replace(/{education-level}/g, data['education-level'])
         .replace(/{education-year}/g, data['education-year'])
         .replace(/{semester}/g, data.semester)
