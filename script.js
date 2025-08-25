@@ -578,49 +578,68 @@ function populateTasksTable(tasks) {
     });
 }
 
-// Translate tasks with consistency and batch processing
+// Translate tasks with optimized batch processing
 async function translateTasks(tasks, targetLanguage) {
     try {
         if (targetLanguage === 'en') {
             return tasks;
         }
 
-        const translatedTasks = [];
+        console.log(`Starting optimized translation of ${tasks.length} tasks to ${targetLanguage}`);
         
-        // Process tasks in smaller batches to avoid rate limits
-        const batchSize = 3;
-        for (let i = 0; i < tasks.length; i += batchSize) {
-            const batch = tasks.slice(i, i + batchSize);
-            console.log(`Translating batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(tasks.length/batchSize)}`);
+        // Create all translation promises at once for parallel processing
+        const translationPromises = tasks.map(async (task, index) => {
+            try {
+                console.log(`Queuing translation for task ${index + 1}: ${task.heading.substring(0, 30)}...`);
+                
+                // Translate all fields in parallel for each task
+                const [heading, content, taskText, application] = await Promise.all([
+                    translateText(task.heading, targetLanguage),
+                    translateText(task.content, targetLanguage),
+                    translateText(task.task, targetLanguage),
+                    translateText(task.application, targetLanguage)
+                ]);
+                
+                return {
+                    skillLevel: task.skillLevel,
+                    heading,
+                    content,
+                    task: taskText,
+                    application
+                };
+                
+            } catch (taskError) {
+                console.error(`Error translating task ${index + 1}: ${task.heading}`, taskError);
+                return task; // Return original if translation fails
+            }
+        });
+        
+        // Process all tasks in parallel with controlled concurrency and progress updates
+        const batchSize = 2; // Reduced batch size for better performance
+        const translatedTasks = [];
+        let completedTasks = 0;
+        
+        for (let i = 0; i < translationPromises.length; i += batchSize) {
+            const batch = translationPromises.slice(i, i + batchSize);
+            console.log(`Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(translationPromises.length/batchSize)}`);
             
-            // Process each task in the batch
-            for (const task of batch) {
-                try {
-                    console.log(`Translating task: ${task.heading.substring(0, 30)}...`);
-                    
-                    const translatedTask = {
-                        skillLevel: task.skillLevel, // Keep skill level as is
-                        heading: await translateText(task.heading, targetLanguage),
-                        content: await translateText(task.content, targetLanguage),
-                        task: await translateText(task.task, targetLanguage),
-                        application: await translateText(task.application, targetLanguage)
-                    };
-                    
-                    translatedTasks.push(translatedTask);
-                    
-                    // Add small delay between API calls to avoid rate limits
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    
-                } catch (taskError) {
-                    console.error(`Error translating task: ${task.heading}`, taskError);
-                    // If translation fails for a task, keep the original
-                    translatedTasks.push(task);
-                }
+            // Update progress
+            if (window.updateTranslationProgress) {
+                window.updateTranslationProgress(completedTasks, tasks.length, `Processing batch ${Math.floor(i/batchSize) + 1}...`);
             }
             
-            // Add delay between batches
-            if (i + batchSize < tasks.length) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
+            const batchResults = await Promise.all(batch);
+            translatedTasks.push(...batchResults);
+            completedTasks += batchResults.length;
+            
+            // Update progress after batch completion
+            if (window.updateTranslationProgress) {
+                window.updateTranslationProgress(completedTasks, tasks.length, `Completed ${completedTasks} of ${tasks.length} tasks`);
+            }
+            
+            // Minimal delay between batches
+            if (i + batchSize < translationPromises.length) {
+                await new Promise(resolve => setTimeout(resolve, 200)); // Reduced delay
             }
         }
         
@@ -691,11 +710,18 @@ CRITICAL RULES:
 
 Output only the pure ${targetLanguageName} translation.`;
 
-        let translatedText = await makeGeminiAPICall(translationPrompt, {
-            maxOutputTokens: 200,
-            temperature: 0.3,
-            topP: 0.8
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Translation timeout')), 15000) // 15 second timeout
+        );
+        
+        const translationPromise = makeGeminiAPICall(translationPrompt, {
+            maxOutputTokens: 150, // Reduced for faster response
+            temperature: 0.2, // Lower temperature for more consistent translations
+            topP: 0.9
         });
+        
+        let translatedText = await Promise.race([translationPromise, timeoutPromise]);
         
         // Clean up translation output
         translatedText = cleanTranslationOutput(translatedText, targetLanguageName);
@@ -754,20 +780,34 @@ async function handleTranslateTasks() {
         DOM.translateTasksBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Translating...';
         DOM.translateTasksBtn.disabled = true;
         
-        // Show progress message
+        // Show progress message with real-time updates
         const progressDiv = document.createElement('div');
         progressDiv.id = 'translationProgress';
         progressDiv.innerHTML = `
             <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                        background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-                        z-index: 10000; text-align: center;">
-                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #667eea; margin-bottom: 10px;"></i>
-                <h3>Translating Tasks</h3>
-                <p>Please wait while we translate ${window.originalTasks.length} tasks to ${CONFIG.SUPPORTED_LANGUAGES[selectedLanguage]}...</p>
-                <p style="font-size: 0.9rem; color: #666;">This may take a few moments for larger task sets.</p>
+                        background: white; padding: 30px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                        z-index: 10000; text-align: center; min-width: 350px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: #667eea; margin-bottom: 15px;"></i>
+                <h3 style="margin: 0 0 10px 0; color: #333;">Translating Tasks</h3>
+                <p style="margin: 0 0 5px 0; color: #666;">Translating ${window.originalTasks.length} tasks to ${CONFIG.SUPPORTED_LANGUAGES[selectedLanguage]}...</p>
+                <div id="translationProgressBar" style="width: 100%; height: 6px; background: #f0f0f0; border-radius: 3px; margin: 15px 0;">
+                    <div id="translationProgressFill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 3px; transition: width 0.3s ease;"></div>
+                </div>
+                <p id="translationProgressText" style="font-size: 0.9rem; color: #888; margin: 0;">Starting translation...</p>
             </div>
         `;
         document.body.appendChild(progressDiv);
+        
+        // Create progress update function
+        window.updateTranslationProgress = (current, total, message) => {
+            const progressFill = document.getElementById('translationProgressFill');
+            const progressText = document.getElementById('translationProgressText');
+            if (progressFill && progressText) {
+                const percentage = Math.round((current / total) * 100);
+                progressFill.style.width = `${percentage}%`;
+                progressText.textContent = message || `Translated ${current} of ${total} tasks...`;
+            }
+        };
         
         console.log('Translating tasks to:', selectedLanguage);
         const translatedTasks = await translateTasks(window.originalTasks, selectedLanguage);
