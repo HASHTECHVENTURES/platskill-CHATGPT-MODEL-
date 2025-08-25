@@ -13,7 +13,7 @@ const CONFIG = {
     OPENROUTER_API_URL: 'https://openrouter.ai/api/v1/chat/completions',
     OPENROUTER_MODEL: 'google/gemini-2.5-pro',
     
-    REQUIRED_FIELDS: ['name', 'education-level', 'education-year', 'semester', 'program', 'main-skill', 'skill-level', 'task-count'],
+    REQUIRED_FIELDS: ['name', 'education-level', 'education-year', 'semester', 'program', 'main-skill', 'skill-level', 'task-count', 'api-provider'],
     SUPPORTED_LANGUAGES: {
         'en': 'English',
         'hi': 'Hindi',
@@ -60,6 +60,7 @@ const DOM = {
     promptsModal: null,
     closePromptsModal: null,
     resetPromptsBtn: null,
+    apiProviderSelect: null,
     
     init() {
         this.form = document.getElementById('taskForm');
@@ -70,10 +71,11 @@ const DOM = {
         this.downloadExcelBtn = document.getElementById('downloadExcel');
         this.translateTasksBtn = document.getElementById('translateTasks');
         this.preferredLanguageSelect = document.getElementById('preferred-language');
-        this.showPromptsBtn = document.getElementById('showPrompts');
+        this.showPromptsBtn = document.getElementById('show-prompts-btn');
         this.promptsModal = document.getElementById('promptsModal');
         this.closePromptsModal = document.getElementById('closePromptsModal');
         this.resetPromptsBtn = document.getElementById('resetPrompts');
+        this.apiProviderSelect = document.getElementById('api-provider');
     }
 };
 
@@ -100,9 +102,15 @@ function initApp() {
         }
     });
     
+    // Check API provider availability when form loads
+    DOM.apiProviderSelect?.addEventListener('change', checkApiProviderAvailability);
+    
     // Initialize default prompts and API keys
     initializeDefaultPrompts();
     loadSavedApiKeys();
+    
+    // Check API provider availability on page load
+    setTimeout(checkApiProviderAvailability, 100);
 }
 
 // Form submission handler
@@ -134,10 +142,39 @@ function validateForm(data) {
             return false;
         }
     }
+    
+    // Validate API provider selection
+    const selectedProvider = data['api-provider'];
+    if (!selectedProvider) {
+        displayError('Please select an API provider.');
+        return false;
+    }
+    
+    // Check if selected provider has API key configured
+    if (selectedProvider === 'openrouter') {
+        const openRouterKey = localStorage.getItem('openRouterApiKey') || CONFIG.OPENROUTER_API_KEY;
+        if (!openRouterKey || openRouterKey === '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') {
+            displayError('Please configure your OpenRouter API key in the prompts settings.');
+            return false;
+        }
+    } else if (selectedProvider === 'gemini1') {
+        const geminiKey1 = localStorage.getItem('geminiApiKey1') || CONFIG.GEMINI_API_KEYS[0];
+        if (!geminiKey1 || geminiKey1 === 'AIzaSyAh_H6EwL3KOgJ8m086W3OBlCqPo7Khewk') {
+            displayError('Please configure your Gemini API Key 1 in the prompts settings.');
+            return false;
+        }
+    } else if (selectedProvider === 'gemini2') {
+        const geminiKey2 = localStorage.getItem('geminiApiKey2') || CONFIG.GEMINI_API_KEYS[1];
+        if (!geminiKey2 || geminiKey2 === 'AIzaSyC0rDffMvwYnTVpAsUI2iMY-N5CqU7lvmU') {
+            displayError('Please configure your Gemini API Key 2 in the prompts settings.');
+            return false;
+        }
+    }
+    
     return true;
 }
 
-// Smart API call with OpenRouter primary and Gemini fallback
+// Smart API call with user-selected provider and fallback
 async function makeGeminiAPICall(prompt, config = {}) {
     const defaultConfig = {
         maxOutputTokens: 2048,
@@ -146,122 +183,119 @@ async function makeGeminiAPICall(prompt, config = {}) {
     };
     
     const finalConfig = { ...defaultConfig, ...config };
+    const selectedProvider = DOM.apiProviderSelect?.value || 'auto';
     
-    // Try OpenRouter first (Primary)
+    // If user selected a specific provider, try that first
+    if (selectedProvider !== 'auto') {
+        try {
+            console.log(`Attempting API call with selected provider: ${selectedProvider}`);
+            
+            switch (selectedProvider) {
+                case 'openrouter':
+                    return await callOpenRouterAPI(prompt, finalConfig);
+                case 'gemini1':
+                    return await callGeminiAPI(prompt, finalConfig, 0);
+                case 'gemini2':
+                    return await callGeminiAPI(prompt, finalConfig, 1);
+                default:
+                    throw new Error(`Unknown provider: ${selectedProvider}`);
+            }
+        } catch (error) {
+            console.warn(`Selected provider ${selectedProvider} failed, falling back to auto mode...`, error.message);
+            // Fall back to auto mode if selected provider fails
+        }
+    }
+    
+    // Auto mode: Try OpenRouter first, then Gemini fallbacks
     try {
         console.log('Attempting API call with OpenRouter (Gemini 2.5 Pro)...');
-        
-        const response = await fetch(CONFIG.OPENROUTER_API_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${CONFIG.OPENROUTER_API_KEY}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': window.location.origin,
-                'X-Title': 'PLAT SKILL Task Generator'
-            },
-            body: JSON.stringify({
-                model: CONFIG.OPENROUTER_MODEL,
-                messages: [
-                    {
-                        role: 'user',
-                        content: prompt
-                    }
-                ],
-                max_tokens: finalConfig.maxOutputTokens,
-                temperature: finalConfig.temperature,
-                top_p: finalConfig.topP
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.warn(`OpenRouter API call failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
-            
-            // Check for specific OpenRouter errors
-            if (response.status === 402) {
-                console.warn('OpenRouter insufficient credits, falling back to Gemini...');
-            } else if (response.status === 429) {
-                console.warn('OpenRouter rate limited, falling back to Gemini...');
-            }
-            
-            throw new Error(`OpenRouter failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        if (!data.choices?.[0]?.message?.content) {
-            console.warn('Invalid response from OpenRouter');
-            throw new Error('Invalid response from OpenRouter');
-        }
-
-        console.log('API call successful with OpenRouter (Gemini 2.5 Pro)');
-        return data.choices[0].message.content.trim();
-        
+        return await callOpenRouterAPI(prompt, finalConfig);
     } catch (error) {
         console.warn('OpenRouter failed, trying Gemini fallback...', error.message);
         
         // Fallback to Gemini API keys
         for (let i = 0; i < CONFIG.GEMINI_API_KEYS.length; i++) {
-            const apiKey = CONFIG.GEMINI_API_KEYS[i];
-            const isPrimary = i === 0;
-            
             try {
-                console.log(`Attempting Gemini API call with ${isPrimary ? 'primary' : 'secondary'} key...`);
-                
-                const response = await fetch(`${CONFIG.GEMINI_API_URL}?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: finalConfig
-                    })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    console.warn(`Gemini API call failed with ${isPrimary ? 'primary' : 'secondary'} key: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
-                    
-                    // Check if it's a rate limit error
-                    if (response.status === 429) {
-                        const retryDelay = errorData.error?.details?.[0]?.['@type'] === 'type.googleapis.com/google.rpc.RetryInfo' 
-                            ? parseInt(errorData.error.details[0].retryDelay) * 1000 
-                            : 60000; // Default 60 seconds
-                        
-                        console.log(`Rate limited. Waiting ${retryDelay/1000} seconds before trying next key...`);
-                        await new Promise(resolve => setTimeout(resolve, retryDelay));
-                    }
-                    
-                    if (i === CONFIG.GEMINI_API_KEYS.length - 1) {
-                        throw new Error(`All API keys failed. Last error: ${response.status}`);
-                    }
-                    continue; // Try next key
-                }
-
-                const data = await response.json();
-                
-                if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    console.warn(`Invalid response from ${isPrimary ? 'primary' : 'secondary'} key`);
-                    if (i === CONFIG.GEMINI_API_KEYS.length - 1) {
-                        throw new Error('Invalid response from all API keys');
-                    }
-                    continue; // Try next key
-                }
-
-                console.log(`API call successful with ${isPrimary ? 'primary' : 'secondary'} Gemini key`);
-                return data.candidates[0].content.parts[0].text.trim();
-                
+                console.log(`Attempting Gemini API call with key ${i + 1}...`);
+                return await callGeminiAPI(prompt, finalConfig, i);
             } catch (error) {
-                console.warn(`Error with ${isPrimary ? 'primary' : 'secondary'} Gemini key:`, error.message);
-                
+                console.warn(`Error with Gemini key ${i + 1}:`, error.message);
                 if (i === CONFIG.GEMINI_API_KEYS.length - 1) {
                     throw error; // Re-throw if all keys failed
                 }
-                // Continue to next key
             }
         }
     }
+}
+
+// Helper function for OpenRouter API calls
+async function callOpenRouterAPI(prompt, config) {
+    const response = await fetch(CONFIG.OPENROUTER_API_URL, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${CONFIG.OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'PLAT SKILL Task Generator'
+        },
+        body: JSON.stringify({
+            model: CONFIG.OPENROUTER_MODEL,
+            messages: [
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ],
+            max_tokens: config.maxOutputTokens,
+            temperature: config.temperature,
+            top_p: config.topP
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`OpenRouter failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.choices?.[0]?.message?.content) {
+        throw new Error('Invalid response from OpenRouter');
+    }
+
+    console.log('API call successful with OpenRouter (Gemini 2.5 Pro)');
+    return data.choices[0].message.content.trim();
+}
+
+// Helper function for Gemini API calls
+async function callGeminiAPI(prompt, config, keyIndex) {
+    const apiKey = CONFIG.GEMINI_API_KEYS[keyIndex];
+    const isPrimary = keyIndex === 0;
+    
+    const response = await fetch(`${CONFIG.GEMINI_API_URL}?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: config
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Gemini API call failed with ${isPrimary ? 'primary' : 'secondary'} key: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        throw new Error(`Invalid response from ${isPrimary ? 'primary' : 'secondary'} key`);
+    }
+
+    console.log(`API call successful with ${isPrimary ? 'primary' : 'secondary'} Gemini key`);
+    return data.candidates[0].content.parts[0].text.trim();
 }
 
 // Generate employability tasks
@@ -958,9 +992,52 @@ function loadSavedPrompts() {
     }
 }
 
+// Check API provider availability and update options
+async function checkApiProviderAvailability() {
+    const apiProviderSelect = DOM.apiProviderSelect;
+    if (!apiProviderSelect) return;
+    
+    // Reset all options
+    const options = apiProviderSelect.querySelectorAll('option');
+    options.forEach(option => {
+        option.textContent = option.textContent.replace(/ ✓| ✗| ⏳/g, '');
+    });
+    
+    // Check each provider
+    const providers = [
+        { value: 'openrouter', name: 'OpenRouter (Gemini 2.5 Pro)', key: 'openRouterApiKey' },
+        { value: 'gemini1', name: 'Gemini API Key 1', key: 'geminiApiKey1' },
+        { value: 'gemini2', name: 'Gemini API Key 2', key: 'geminiApiKey2' }
+    ];
+    
+    for (const provider of providers) {
+        const option = apiProviderSelect.querySelector(`option[value="${provider.value}"]`);
+        if (!option) continue;
+        
+        // Check if API key is configured
+        const savedKey = localStorage.getItem(provider.key);
+        const defaultKey = provider.key === 'openRouterApiKey' ? CONFIG.OPENROUTER_API_KEY : 
+                          provider.key === 'geminiApiKey1' ? CONFIG.GEMINI_API_KEYS[0] : CONFIG.GEMINI_API_KEYS[1];
+        
+        const hasCustomKey = savedKey && savedKey !== defaultKey;
+        
+        if (hasCustomKey) {
+            option.textContent = `${provider.name} ✓`;
+            option.style.color = '#28a745';
+        } else {
+            option.textContent = `${provider.name} ✗`;
+            option.style.color = '#dc3545';
+        }
+    }
+}
+
+// Update API provider options when prompts modal is opened
 function showPromptsModal() {
     DOM.promptsModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    
+    // Check API provider availability
+    checkApiProviderAvailability();
 }
 
 function hidePromptsModal() {
