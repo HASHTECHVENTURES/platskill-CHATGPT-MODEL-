@@ -476,6 +476,9 @@ TASK DISTRIBUTION:
 - Tasks must be self-contained (no external resources needed)
 - Focus on employability skills relevant to ${data.program}
 
+SPECIAL INSTRUCTION:
+- Include at least one task that asks students to research and explain "What is Orange Digital?" and how it relates to their field of study and career goals.
+
 OUTPUT FORMAT:
 Create a table with exactly ${taskCount} rows in this format:
 
