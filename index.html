@@ -129,6 +129,41 @@
                     </div>
                 </div>
 
+                <!-- Excel Upload & Translation Section -->
+                <div class="form-section">
+                    <h2><i class="fas fa-file-excel"></i> Excel File Translation</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="excel-file">Upload Excel File</label>
+                            <input type="file" id="excel-file" name="excel-file" accept=".xlsx,.xls" class="file-input">
+                            <small class="file-help">Supported formats: .xlsx, .xls (Max 5MB)</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="excel-target-language">Target Language</label>
+                            <select id="excel-target-language" name="excel-target-language">
+                                <option value="hi">Hindi</option>
+                                <option value="mr">Marathi</option>
+                                <option value="bn">Bengali</option>
+                                <option value="te">Telugu</option>
+                                <option value="ta">Tamil</option>
+                                <option value="ml">Malayalam</option>
+                                <option value="kn">Kannada</option>
+                                <option value="gu">Gujarati</option>
+                                <option value="pa">Punjabi</option>
+                                <option value="or">Odia</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="excel-actions">
+                        <button type="button" id="translateExcel" class="btn btn-outline" disabled>
+                            <i class="fas fa-language"></i> Translate Excel File
+                        </button>
+                        <button type="button" id="downloadTranslatedExcel" class="btn btn-secondary" disabled>
+                            <i class="fas fa-download"></i> Download Translated Excel
+                        </button>
+                    </div>
+                </div>
+
 
 
 
@@ -148,6 +183,19 @@
                     <i class="fas fa-spinner fa-spin"></i>
                     <h3>Generating Your Employability Tasks</h3>
                     <p>Creating bite-sized, engaging tasks to boost your career skills...</p>
+                </div>
+            </div>
+
+            <!-- Excel Translation Loading State -->
+            <div id="excelLoading" class="loading hidden">
+                <div class="loading-content">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <h3>Translating Excel File</h3>
+                    <p>Processing and translating your Excel file content...</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="excelProgress"></div>
+                    </div>
+                    <p id="excelProgressText">Preparing translation...</p>
                 </div>
             </div>
 

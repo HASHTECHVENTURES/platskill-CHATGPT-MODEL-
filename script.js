@@ -52,7 +52,15 @@ const CONFIG = {
     SUPPORTED_LANGUAGES: {
         'en': 'English',
         'hi': 'Hindi',
-        'mr': 'Marathi'
+        'mr': 'Marathi',
+        'bn': 'Bengali',
+        'te': 'Telugu',
+        'ta': 'Tamil',
+        'ml': 'Malayalam',
+        'kn': 'Kannada',
+        'gu': 'Gujarati',
+        'pa': 'Punjabi',
+        'or': 'Odia'
     }
 
 };
@@ -112,6 +120,15 @@ const DOM = {
     closePromptsModal: null,
     resetPromptsBtn: null,
 
+    // Excel translation elements
+    excelFileInput: null,
+    excelTargetLanguage: null,
+    translateExcelBtn: null,
+    downloadTranslatedExcelBtn: null,
+    excelLoadingDiv: null,
+    excelProgressBar: null,
+    excelProgressText: null,
+
     
     init() {
         this.form = document.getElementById('taskForm');
@@ -127,6 +144,15 @@ const DOM = {
         this.promptsModal = document.getElementById('promptsModal');
         this.closePromptsModal = document.getElementById('closePromptsModal');
         this.resetPromptsBtn = document.getElementById('resetPrompts');
+
+        // Excel translation elements
+        this.excelFileInput = document.getElementById('excel-file');
+        this.excelTargetLanguage = document.getElementById('excel-target-language');
+        this.translateExcelBtn = document.getElementById('translateExcel');
+        this.downloadTranslatedExcelBtn = document.getElementById('downloadTranslatedExcel');
+        this.excelLoadingDiv = document.getElementById('excelLoading');
+        this.excelProgressBar = document.getElementById('excelProgress');
+        this.excelProgressText = document.getElementById('excelProgressText');
 
     }
 };
@@ -147,6 +173,11 @@ function initApp() {
     DOM.showPromptsBtn?.addEventListener('click', showPromptsModal);
     DOM.closePromptsModal?.addEventListener('click', hidePromptsModal);
     DOM.resetPromptsBtn?.addEventListener('click', resetToDefaultPrompts);
+    
+    // Excel translation event listeners
+    DOM.excelFileInput?.addEventListener('change', handleExcelFileSelect);
+    DOM.translateExcelBtn?.addEventListener('click', handleExcelTranslation);
+    DOM.downloadTranslatedExcelBtn?.addEventListener('click', downloadTranslatedExcel);
     
     // Close modal when clicking outside
     DOM.promptsModal?.addEventListener('click', (e) => {
@@ -1567,6 +1598,215 @@ function initCustomPrompts() {
             closeCustomPromptModal();
         }
     });
+}
+
+// Excel Translation Functions
+
+// Global variables for Excel translation
+let uploadedExcelData = null;
+let translatedExcelData = null;
+
+// Handle Excel file selection
+function handleExcelFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) {
+        DOM.translateExcelBtn.disabled = true;
+        return;
+    }
+
+    // Validate file type
+    const validTypes = [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+        'application/vnd.ms-excel' // .xls
+    ];
+    
+    if (!validTypes.includes(file.type)) {
+        displayError('Please select a valid Excel file (.xlsx or .xls)');
+        event.target.value = '';
+        DOM.translateExcelBtn.disabled = true;
+        return;
+    }
+
+    // Validate file size (5MB limit)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+        displayError('File size must be less than 5MB');
+        event.target.value = '';
+        DOM.translateExcelBtn.disabled = true;
+        return;
+    }
+
+    // Read and parse Excel file
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            // Get the first sheet
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            // Convert to JSON
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
+            if (jsonData.length === 0) {
+                displayError('Excel file is empty or has no data');
+                event.target.value = '';
+                DOM.translateExcelBtn.disabled = true;
+                return;
+            }
+
+            uploadedExcelData = {
+                workbook: workbook,
+                worksheet: worksheet,
+                jsonData: jsonData,
+                sheetName: firstSheetName,
+                fileName: file.name
+            };
+
+            DOM.translateExcelBtn.disabled = false;
+            showSuccess(`Excel file "${file.name}" loaded successfully!`);
+            
+        } catch (error) {
+            console.error('Error reading Excel file:', error);
+            displayError('Error reading Excel file. Please try again.');
+            event.target.value = '';
+            DOM.translateExcelBtn.disabled = true;
+        }
+    };
+    
+    reader.readAsArrayBuffer(file);
+}
+
+// Handle Excel translation
+async function handleExcelTranslation() {
+    if (!uploadedExcelData) {
+        displayError('Please select an Excel file first');
+        return;
+    }
+
+    const targetLanguage = DOM.excelTargetLanguage.value;
+    if (!targetLanguage) {
+        displayError('Please select a target language');
+        return;
+    }
+
+    try {
+        showExcelLoading();
+        
+        const translatedData = await translateExcelData(uploadedExcelData, targetLanguage);
+        translatedExcelData = translatedData;
+        
+        hideExcelLoading();
+        DOM.downloadTranslatedExcelBtn.disabled = false;
+        
+        showSuccess(`Excel file translated to ${CONFIG.SUPPORTED_LANGUAGES[targetLanguage] || targetLanguage} successfully!`);
+        
+    } catch (error) {
+        console.error('Error translating Excel:', error);
+        hideExcelLoading();
+        displayError('Error translating Excel file. Please try again.');
+    }
+}
+
+// Translate Excel data
+async function translateExcelData(excelData, targetLanguage) {
+    const { jsonData } = excelData;
+    const translatedRows = [];
+    
+    // Update progress
+    updateExcelProgress(0, 'Starting translation...');
+    
+    for (let i = 0; i < jsonData.length; i++) {
+        const row = jsonData[i];
+        const translatedRow = [];
+        
+        for (let j = 0; j < row.length; j++) {
+            const cellValue = row[j];
+            
+            if (cellValue && typeof cellValue === 'string' && cellValue.trim()) {
+                try {
+                    const translatedValue = await translateText(cellValue, targetLanguage);
+                    translatedRow.push(translatedValue);
+                } catch (error) {
+                    console.warn(`Translation failed for cell [${i},${j}]:`, error);
+                    translatedRow.push(cellValue); // Keep original if translation fails
+                }
+            } else {
+                translatedRow.push(cellValue); // Keep non-string values as is
+            }
+        }
+        
+        translatedRows.push(translatedRow);
+        
+        // Update progress
+        const progress = Math.round(((i + 1) / jsonData.length) * 100);
+        updateExcelProgress(progress, `Translating row ${i + 1} of ${jsonData.length}...`);
+        
+        // Small delay to prevent rate limiting
+        await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
+    updateExcelProgress(100, 'Translation completed!');
+    
+    return {
+        ...excelData,
+        jsonData: translatedRows
+    };
+}
+
+// Download translated Excel
+function downloadTranslatedExcel() {
+    if (!translatedExcelData) {
+        displayError('No translated Excel data available');
+        return;
+    }
+
+    try {
+        // Create new workbook with translated data
+        const newWorkbook = XLSX.utils.book_new();
+        const newWorksheet = XLSX.utils.aoa_to_sheet(translatedExcelData.jsonData);
+        
+        // Add worksheet to workbook
+        XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, translatedExcelData.sheetName);
+        
+        // Generate filename
+        const originalName = translatedExcelData.fileName.replace(/\.(xlsx|xls)$/i, '');
+        const targetLanguage = DOM.excelTargetLanguage.value;
+        const languageName = CONFIG.SUPPORTED_LANGUAGES[targetLanguage] || targetLanguage;
+        const newFileName = `${originalName}_translated_${languageName}.xlsx`;
+        
+        // Download file
+        XLSX.writeFile(newWorkbook, newFileName);
+        
+        showSuccess(`Translated Excel file downloaded as "${newFileName}"`);
+        
+    } catch (error) {
+        console.error('Error downloading translated Excel:', error);
+        displayError('Error downloading translated Excel file');
+    }
+}
+
+// Show Excel loading state
+function showExcelLoading() {
+    DOM.excelLoadingDiv.classList.remove('hidden');
+    DOM.excelLoadingDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// Hide Excel loading state
+function hideExcelLoading() {
+    DOM.excelLoadingDiv.classList.add('hidden');
+}
+
+// Update Excel progress
+function updateExcelProgress(percentage, text) {
+    if (DOM.excelProgressBar) {
+        DOM.excelProgressBar.style.width = `${percentage}%`;
+    }
+    if (DOM.excelProgressText) {
+        DOM.excelProgressText.textContent = text;
+    }
 }
 
 // Initialize app when DOM is loaded
