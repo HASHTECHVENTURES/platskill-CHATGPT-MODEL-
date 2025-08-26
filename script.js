@@ -124,10 +124,19 @@ const DOM = {
     excelFileInput: null,
     excelTargetLanguage: null,
     translateExcelBtn: null,
+    previewTranslatedExcelBtn: null,
     downloadTranslatedExcelBtn: null,
     excelLoadingDiv: null,
     excelProgressBar: null,
     excelProgressText: null,
+    
+    // Excel preview modal elements
+    excelPreviewModal: null,
+    closeExcelPreviewModal: null,
+    excelPreviewTable: null,
+    previewOriginalFile: null,
+    previewTargetLanguage: null,
+    previewRowCount: null,
 
     
     init() {
@@ -149,10 +158,19 @@ const DOM = {
         this.excelFileInput = document.getElementById('excel-file');
         this.excelTargetLanguage = document.getElementById('excel-target-language');
         this.translateExcelBtn = document.getElementById('translateExcel');
+        this.previewTranslatedExcelBtn = document.getElementById('previewTranslatedExcel');
         this.downloadTranslatedExcelBtn = document.getElementById('downloadTranslatedExcel');
         this.excelLoadingDiv = document.getElementById('excelLoading');
         this.excelProgressBar = document.getElementById('excelProgress');
         this.excelProgressText = document.getElementById('excelProgressText');
+        
+        // Excel preview modal elements
+        this.excelPreviewModal = document.getElementById('excelPreviewModal');
+        this.closeExcelPreviewModal = document.getElementById('closeExcelPreviewModal');
+        this.excelPreviewTable = document.getElementById('excelPreviewTable');
+        this.previewOriginalFile = document.getElementById('previewOriginalFile');
+        this.previewTargetLanguage = document.getElementById('previewTargetLanguage');
+        this.previewRowCount = document.getElementById('previewRowCount');
 
     }
 };
@@ -177,7 +195,16 @@ function initApp() {
     // Excel translation event listeners
     DOM.excelFileInput?.addEventListener('change', handleExcelFileSelect);
     DOM.translateExcelBtn?.addEventListener('click', handleExcelTranslation);
+    DOM.previewTranslatedExcelBtn?.addEventListener('click', previewTranslatedExcel);
     DOM.downloadTranslatedExcelBtn?.addEventListener('click', downloadTranslatedExcel);
+    
+    // Excel preview modal event listeners
+    DOM.closeExcelPreviewModal?.addEventListener('click', hideExcelPreviewModal);
+    DOM.excelPreviewModal?.addEventListener('click', (e) => {
+        if (e.target === DOM.excelPreviewModal) {
+            hideExcelPreviewModal();
+        }
+    });
     
     // Close modal when clicking outside
     DOM.promptsModal?.addEventListener('click', (e) => {
@@ -1699,9 +1726,10 @@ async function handleExcelTranslation() {
         translatedExcelData = translatedData;
         
         hideExcelLoading();
+        DOM.previewTranslatedExcelBtn.disabled = false;
         DOM.downloadTranslatedExcelBtn.disabled = false;
         
-        showSuccess(`Excel file translated to ${CONFIG.SUPPORTED_LANGUAGES[targetLanguage] || targetLanguage} successfully!`);
+        showSuccess(`Excel file translated to ${CONFIG.SUPPORTED_LANGUAGES[targetLanguage] || targetLanguage} successfully! Click "Preview Translation" to review before downloading.`);
         
     } catch (error) {
         console.error('Error translating Excel:', error);
@@ -1710,7 +1738,7 @@ async function handleExcelTranslation() {
     }
 }
 
-// Translate Excel data
+// Translate Excel data with improved quality
 async function translateExcelData(excelData, targetLanguage) {
     const { jsonData } = excelData;
     const translatedRows = [];
@@ -1727,8 +1755,12 @@ async function translateExcelData(excelData, targetLanguage) {
             
             if (cellValue && typeof cellValue === 'string' && cellValue.trim()) {
                 try {
-                    const translatedValue = await translateText(cellValue, targetLanguage);
-                    translatedRow.push(translatedValue);
+                    // Pre-process the text to handle special cases
+                    const processedText = preprocessTextForTranslation(cellValue, targetLanguage);
+                    const translatedValue = await translateTextWithQuality(processedText, targetLanguage);
+                    // Post-process the translated text
+                    const finalValue = postprocessTranslatedText(translatedValue, targetLanguage);
+                    translatedRow.push(finalValue);
                 } catch (error) {
                     console.warn(`Translation failed for cell [${i},${j}]:`, error);
                     translatedRow.push(cellValue); // Keep original if translation fails
@@ -1745,7 +1777,7 @@ async function translateExcelData(excelData, targetLanguage) {
         updateExcelProgress(progress, `Translating row ${i + 1} of ${jsonData.length}...`);
         
         // Small delay to prevent rate limiting
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 300));
     }
     
     updateExcelProgress(100, 'Translation completed!');
@@ -1754,6 +1786,130 @@ async function translateExcelData(excelData, targetLanguage) {
         ...excelData,
         jsonData: translatedRows
     };
+}
+
+// Pre-process text for better translation
+function preprocessTextForTranslation(text, targetLanguage) {
+    let processedText = text;
+    
+    // Preserve question numbers and options
+    processedText = processedText.replace(/(\d+\.)/g, 'QUESTION_NUMBER_$1');
+    processedText = processedText.replace(/([A-Z])\./g, 'OPTION_LETTER_$1');
+    
+    // Preserve mathematical expressions
+    processedText = processedText.replace(/(\d+)/g, 'NUMBER_$1');
+    
+    // Preserve special formatting
+    processedText = processedText.replace(/\*\*(.*?)\*\*/g, 'BOLD_$1_BOLD');
+    processedText = processedText.replace(/\*(.*?)\*/g, 'ITALIC_$1_ITALIC');
+    
+    return processedText;
+}
+
+// Post-process translated text to restore formatting
+function postprocessTranslatedText(text, targetLanguage) {
+    let processedText = text;
+    
+    // Restore question numbers
+    processedText = processedText.replace(/QUESTION_NUMBER_(\d+)/g, '$1.');
+    
+    // Restore option letters with proper translation
+    const optionLetterMap = {
+        'hi': { 'A': 'क', 'B': 'ख', 'C': 'ग', 'D': 'घ', 'P': 'प', 'Q': 'क्यू', 'R': 'आर', 'T': 'टी' },
+        'mr': { 'A': 'अ', 'B': 'ब', 'C': 'क', 'D': 'ड', 'P': 'प', 'Q': 'क्यू', 'R': 'र', 'T': 'ट' },
+        'bn': { 'A': 'ক', 'B': 'খ', 'C': 'গ', 'D': 'ঘ', 'P': 'প', 'Q': 'কিউ', 'R': 'র', 'T': 'টি' },
+        'te': { 'A': 'ఎ', 'B': 'బి', 'C': 'సి', 'D': 'డి', 'P': 'పి', 'Q': 'క్యూ', 'R': 'ఆర్', 'T': 'టి' },
+        'ta': { 'A': 'அ', 'B': 'பி', 'C': 'சி', 'D': 'டி', 'P': 'பி', 'Q': 'க்யூ', 'R': 'ஆர்', 'T': 'டி' },
+        'ml': { 'A': 'എ', 'B': 'ബി', 'C': 'സി', 'D': 'ഡി', 'P': 'പി', 'Q': 'ക്യൂ', 'R': 'ആർ', 'T': 'ടി' },
+        'kn': { 'A': 'ಎ', 'B': 'ಬಿ', 'C': 'ಸಿ', 'D': 'ಡಿ', 'P': 'ಪಿ', 'Q': 'ಕ್ಯೂ', 'R': 'ಆರ್', 'T': 'ಟಿ' },
+        'gu': { 'A': 'એ', 'B': 'બી', 'C': 'સી', 'D': 'ડી', 'P': 'પી', 'Q': 'ક્યૂ', 'R': 'આર', 'T': 'ટી' },
+        'pa': { 'A': 'ਏ', 'B': 'ਬੀ', 'C': 'ਸੀ', 'D': 'ਡੀ', 'P': 'ਪੀ', 'Q': 'ਕਿਊ', 'R': 'ਆਰ', 'T': 'ਟੀ' },
+        'or': { 'A': 'ଏ', 'B': 'ବି', 'C': 'ସି', 'D': 'ଡି', 'P': 'ପି', 'Q': 'କିଉ', 'R': 'ଆର', 'T': 'ଟି' }
+    };
+    
+    const letterMap = optionLetterMap[targetLanguage] || optionLetterMap['en'];
+    processedText = processedText.replace(/OPTION_LETTER_([A-Z])/g, (match, letter) => {
+        return letterMap[letter] || letter;
+    });
+    
+    // Restore numbers with proper translation
+    const numberMap = {
+        'hi': { '0': '०', '1': '१', '2': '२', '3': '३', '4': '४', '5': '५', '6': '६', '7': '७', '8': '८', '9': '९' },
+        'mr': { '0': '०', '1': '१', '2': '२', '3': '३', '4': '४', '5': '५', '6': '६', '7': '७', '8': '८', '9': '९' },
+        'bn': { '0': '০', '1': '১', '2': '২', '3': '৩', '4': '৪', '5': '৫', '6': '৬', '7': '৭', '8': '৮', '9': '৯' },
+        'te': { '0': '౦', '1': '౧', '2': '౨', '3': '౩', '4': '౪', '5': '౫', '6': '౬', '7': '౭', '8': '౮', '9': '౯' },
+        'ta': { '0': '௦', '1': '௧', '2': '௨', '3': '௩', '4': '௪', '5': '௫', '6': '௬', '7': '௭', '8': '௮', '9': '௯' },
+        'ml': { '0': '൦', '1': '൧', '2': '൨', '3': '൩', '4': '൪', '5': '൫', '6': '൬', '7': '൭', '8': '൮', '9': '൯' },
+        'kn': { '0': '೦', '1': '೧', '2': '೨', '3': '೩', '4': '೪', '5': '೫', '6': '೬', '7': '೭', '8': '೮', '9': '೯' },
+        'gu': { '0': '૦', '1': '૧', '2': '૨', '3': '૩', '4': '૪', '5': '૫', '6': '૬', '7': '૭', '8': '૮', '9': '૯' },
+        'pa': { '0': '੦', '1': '੧', '2': '੨', '3': '੩', '4': '੪', '5': '੫', '6': '੬', '7': '੭', '8': '੮', '9': '੯' },
+        'or': { '0': '୦', '1': '୧', '2': '୨', '3': '୩', '4': '୪', '5': '୫', '6': '୬', '7': '୭', '8': '୮', '9': '୯' }
+    };
+    
+    const numMap = numberMap[targetLanguage] || {};
+    processedText = processedText.replace(/NUMBER_(\d+)/g, (match, number) => {
+        return number.split('').map(digit => numMap[digit] || digit).join('');
+    });
+    
+    // Restore formatting
+    processedText = processedText.replace(/BOLD_(.*?)_BOLD/g, '**$1**');
+    processedText = processedText.replace(/ITALIC_(.*?)_ITALIC/g, '*$1*');
+    
+    return processedText;
+}
+
+// Enhanced translation function with better quality
+async function translateTextWithQuality(text, targetLanguage) {
+    const languageNames = {
+        'hi': 'Hindi',
+        'mr': 'Marathi',
+        'bn': 'Bengali',
+        'te': 'Telugu',
+        'ta': 'Tamil',
+        'ml': 'Malayalam',
+        'kn': 'Kannada',
+        'gu': 'Gujarati',
+        'pa': 'Punjabi',
+        'or': 'Odia'
+    };
+
+    const targetLanguageName = languageNames[targetLanguage];
+    
+    // Enhanced translation prompt for better quality
+    const enhancedTranslationPrompt = `Translate this text to ${targetLanguageName} with high accuracy:
+
+TEXT: "${text}"
+
+CRITICAL REQUIREMENTS:
+1. Translate EVERYTHING to ${targetLanguageName} - no English words allowed
+2. Use native script only
+3. Maintain the exact meaning and context
+4. Preserve question structure and formatting
+5. Keep numbers, mathematical expressions, and special characters intact
+6. Ensure complete sentences and proper grammar
+7. Use appropriate terminology for educational content
+8. Maintain consistency in technical terms
+9. If it's a question, ensure it's complete and clear
+10. If it's an option (A, B, C, D, P, Q, R, T), translate the letter appropriately
+
+Output only the pure ${targetLanguageName} translation without any explanations or quotes.`;
+
+    let translatedText = await makeGeminiAPICall(enhancedTranslationPrompt, {
+        maxOutputTokens: 500,
+        temperature: 0.2,
+        topP: 0.9
+    });
+    
+    // Clean up translation output
+    translatedText = cleanTranslationOutput(translatedText, targetLanguageName);
+    
+    // If translation is empty or same as original, return original
+    if (!translatedText || translatedText === text) {
+        console.log(`Translation failed or empty for: "${text}"`);
+        return text;
+    }
+    
+    return translatedText;
 }
 
 // Download translated Excel
@@ -1797,6 +1953,76 @@ function showExcelLoading() {
 // Hide Excel loading state
 function hideExcelLoading() {
     DOM.excelLoadingDiv.classList.add('hidden');
+}
+
+// Preview translated Excel
+function previewTranslatedExcel() {
+    if (!translatedExcelData) {
+        displayError('No translated Excel data available');
+        return;
+    }
+
+    try {
+        // Populate preview modal with data
+        DOM.previewOriginalFile.textContent = translatedExcelData.fileName;
+        DOM.previewTargetLanguage.textContent = CONFIG.SUPPORTED_LANGUAGES[DOM.excelTargetLanguage.value] || DOM.excelTargetLanguage.value;
+        DOM.previewRowCount.textContent = translatedExcelData.jsonData.length;
+        
+        // Create preview table
+        const table = DOM.excelPreviewTable;
+        table.innerHTML = '';
+        
+        // Add header row if data exists
+        if (translatedExcelData.jsonData.length > 0) {
+            const headerRow = document.createElement('tr');
+            const firstRow = translatedExcelData.jsonData[0];
+            
+            for (let j = 0; j < firstRow.length; j++) {
+                const th = document.createElement('th');
+                th.textContent = `Column ${j + 1}`;
+                headerRow.appendChild(th);
+            }
+            table.appendChild(headerRow);
+        }
+        
+        // Add data rows (show first 20 rows for preview)
+        const maxPreviewRows = Math.min(20, translatedExcelData.jsonData.length);
+        for (let i = 0; i < maxPreviewRows; i++) {
+            const row = translatedExcelData.jsonData[i];
+            const tr = document.createElement('tr');
+            
+            for (let j = 0; j < row.length; j++) {
+                const td = document.createElement('td');
+                const cellValue = row[j];
+                
+                // Handle different data types
+                if (cellValue === null || cellValue === undefined) {
+                    td.textContent = '';
+                } else if (typeof cellValue === 'string') {
+                    td.textContent = cellValue;
+                } else {
+                    td.textContent = String(cellValue);
+                }
+                
+                tr.appendChild(td);
+            }
+            table.appendChild(tr);
+        }
+        
+        // Show preview modal
+        DOM.excelPreviewModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+    } catch (error) {
+        console.error('Error showing Excel preview:', error);
+        displayError('Error showing Excel preview');
+    }
+}
+
+// Hide Excel preview modal
+function hideExcelPreviewModal() {
+    DOM.excelPreviewModal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
 }
 
 // Update Excel progress

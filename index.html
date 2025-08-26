@@ -158,6 +158,9 @@
                         <button type="button" id="translateExcel" class="btn btn-outline" disabled>
                             <i class="fas fa-language"></i> Translate Excel File
                         </button>
+                        <button type="button" id="previewTranslatedExcel" class="btn btn-secondary" disabled>
+                            <i class="fas fa-eye"></i> Preview Translation
+                        </button>
                         <button type="button" id="downloadTranslatedExcel" class="btn btn-secondary" disabled>
                             <i class="fas fa-download"></i> Download Translated Excel
                         </button>
@@ -546,6 +549,37 @@
                     <div class="prompt-modal-actions">
                         <button class="btn btn-outline" onclick="closeCustomPromptModal()">Cancel</button>
                         <button class="btn btn-primary" onclick="saveCustomPrompt()">Save Prompt</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Excel Preview Modal -->
+        <div id="excelPreviewModal" class="modal hidden">
+            <div class="modal-content excel-preview-modal">
+                <div class="modal-header">
+                    <h2><i class="fas fa-table"></i> Excel Translation Preview</h2>
+                    <button id="closeExcelPreviewModal" class="close-btn" title="Close Excel preview modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="preview-controls">
+                        <div class="preview-info">
+                            <span><strong>Original File:</strong> <span id="previewOriginalFile"></span></span>
+                            <span><strong>Target Language:</strong> <span id="previewTargetLanguage"></span></span>
+                            <span><strong>Rows:</strong> <span id="previewRowCount"></span></span>
+                        </div>
+                        <div class="preview-actions">
+                            <button class="btn btn-primary" onclick="downloadTranslatedExcel()">
+                                <i class="fas fa-download"></i> Download Translated Excel
+                            </button>
+                        </div>
+                    </div>
+                    <div class="excel-preview-container">
+                        <table id="excelPreviewTable" class="excel-preview-table">
+                            <!-- Preview table will be populated here -->
+                        </table>
                     </div>
                 </div>
             </div>

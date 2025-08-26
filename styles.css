@@ -1136,6 +1136,81 @@ body {
     background: #e3f2fd;
 }
 
+/* Excel Preview Modal Styles */
+.excel-preview-modal {
+    max-width: 95%;
+    width: 1200px;
+    max-height: 90%;
+}
+
+.preview-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.preview-info {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.preview-info span {
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.preview-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.excel-preview-container {
+    max-height: 60vh;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+}
+
+.excel-preview-container .excel-preview-table {
+    margin: 0;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+.excel-preview-container .excel-preview-table th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Responsive Design for Excel Preview */
+@media (max-width: 768px) {
+    .excel-preview-modal {
+        width: 98%;
+        max-height: 95%;
+    }
+    
+    .preview-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .preview-info {
+        justify-content: center;
+    }
+    
+    .preview-actions {
+        justify-content: center;
+    }
+}
+
 /* Custom Prompts Management Styles */
 .custom-prompts-container {
     background: #f8f9fa;
