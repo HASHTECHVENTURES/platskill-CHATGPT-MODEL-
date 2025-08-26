@@ -115,10 +115,7 @@ const DOM = {
     translateTasksBtn: null,
     preferredLanguageSelect: null,
 
-    showPromptsBtn: null,
-    promptsModal: null,
-    closePromptsModal: null,
-    resetPromptsBtn: null,
+
 
     // Excel translation elements
     excelFileInput: null,
@@ -149,10 +146,7 @@ const DOM = {
         this.translateTasksBtn = document.getElementById('translateTasks');
         this.preferredLanguageSelect = document.getElementById('preferred-language');
 
-        this.showPromptsBtn = document.getElementById('show-prompts-btn');
-        this.promptsModal = document.getElementById('promptsModal');
-        this.closePromptsModal = document.getElementById('closePromptsModal');
-        this.resetPromptsBtn = document.getElementById('resetPrompts');
+
 
         // Excel translation elements
         this.excelFileInput = document.getElementById('excel-file');
@@ -188,10 +182,6 @@ function initApp() {
     DOM.downloadExcelBtn?.addEventListener('click', downloadExcel);
     DOM.translateTasksBtn?.addEventListener('click', handleTranslateTasks);
 
-    DOM.showPromptsBtn?.addEventListener('click', showPromptsModal);
-    DOM.closePromptsModal?.addEventListener('click', hidePromptsModal);
-    DOM.resetPromptsBtn?.addEventListener('click', resetToDefaultPrompts);
-    
     // Excel translation event listeners
     DOM.excelFileInput?.addEventListener('change', handleExcelFileSelect);
     DOM.translateExcelBtn?.addEventListener('click', handleExcelTranslation);
@@ -206,21 +196,10 @@ function initApp() {
         }
     });
     
-    // Close modal when clicking outside
-    DOM.promptsModal?.addEventListener('click', (e) => {
-        if (e.target === DOM.promptsModal) {
-            hidePromptsModal();
-        }
-    });
-    
 
     
-    // Initialize default prompts and API keys
-    initializeDefaultPrompts();
+    // Initialize API keys
     loadSavedApiKeys();
-    
-    // Initialize custom prompts management
-    initCustomPrompts();
     
 
 }
@@ -678,13 +657,22 @@ async function translateText(text, targetLanguage) {
 
         const targetLanguageName = languageNames[targetLanguage];
         
-        // Get custom translation prompt or use default
-        const customTranslationPrompt = document.getElementById('translationPrompt')?.value || defaultPrompts.translation;
-        
-        const translationPrompt = customTranslationPrompt
-            .replace(/{text}/g, text)
-            .replace(/{targetLanguage}/g, targetLanguageName)
-            .replace(/{targetLanguageCode}/g, targetLanguage);
+        // Create translation prompt
+        const translationPrompt = `Translate this text to ${targetLanguageName}: "${text}"
+
+CRITICAL RULES:
+- Translate EVERYTHING to ${targetLanguageName} - no English words allowed
+- Use native script only
+- Translate ALL parts including names to appropriate ${targetLanguageName} equivalent
+- No explanations, quotes, or extra text
+- Keep same meaning and tone
+- No repetition of words
+- If it's a task instruction, translate the entire instruction
+- If it's an application/benefit text, translate completely
+- DO NOT CUT or truncate the translation - translate the complete text
+- Ensure the full meaning is preserved
+
+Output only the pure ${targetLanguageName} translation.`;
 
         let translatedText = await makeGeminiAPICall(translationPrompt, {
             maxOutputTokens: 300,
@@ -842,217 +830,9 @@ function getErrorMessage(error) {
 }
 
 // Prompt Management Functions
-let defaultPrompts = {};
-
-function initializeDefaultPrompts() {
-    // Store default prompts for reset functionality
-    defaultPrompts = {
-        taskGeneration: `Create {taskCount} employability tasks following these STRICT guidelines:
-
-STUDENT PROFILE:
-- Education Level: {education-level}
-- Education Year: {education-year}
-- Semester: {semester}
-- Program: {program}
-- Main Skill Focus: {main-skill}
-
-HEADING REQUIREMENTS (3-7 words):
-- Not too casual, not too formal/plain
-- Interesting, hook-like with idioms/quotes
-- Related to the task/content
-- Examples: "Think Like a CEO", "The 7-Second Rule", "Master the Art of..."
-- **Translation-Ready**: Create headings that will translate well to all Indian languages
-- **No Repetition**: Avoid repeating words unnecessarily
-- **Hook-Style**: Make them catchy and memorable in any language
-
-CONTENT REQUIREMENTS (around 50 words):
-- Related to skill/task/heading/education level
-- Helpful for student upskilling - something they learn from
-- Formal but engaging - hook-like, not casual
-- Simple language
-- Include: Research, New Technique, Tips and Tricks, or Case study (prefer Indian examples)
-- Each content should be UNIQUE - avoid repetitive formatting
-- Common to all programs in the paper code
-- Not repetitive - one concept/tip should not repeat
-- Not too technical
-- **Translation-Friendly**: Use language that translates naturally to Indian languages
-- **Cultural Context**: Include Indian examples that work across all regions
-
-TASK REQUIREMENTS (50-80 words):
-- Related to skill/content/heading/education level
-- Only text box writing - avoid uploads
-- Simple language
-- Action and application-oriented, learning to do something new, or observe something new
-- NOT academic
-- Interesting and fun to do
-- Requires not more than 5 minutes
-- Requires not more than 80-worded answer
-- Not too open-ended, give specific instructions
-- **Translation-Ready**: Use language that translates clearly to all Indian languages
-- **Universal Terms**: Avoid English-specific idioms that don't translate well
-
-APPLICATION REQUIREMENTS (10-20 words, full sentence):
-- Concise and specific
-- Related to skill/content/task/heading/education level
-- How will it help the student from that paper code to do this task
-- **Translation-Friendly**: Keep sentences simple for easy translation
-
-OUTPUT FORMAT:
-Create a table with exactly {taskCount} rows in this format:
-
-| Skill Level | Heading | Content | Task | Application |
-|-------------|---------|---------|------|-------------|
-| [Low/Medium/High] | [3-7 word hook-like title] | [25-35 words: research/technique/tips/Indian case study] | [30-50 words: 5-min text task] | [8-15 words: full sentence benefit] |
-
-Make tasks engaging, practical, and specifically tailored for {program} students at {education-level} level. Ensure each task follows the exact word limits and formatting requirements while being engaging and practical.`,
-
-        translation: `Translate this text to {targetLanguage}: "{text}"
-
-CRITICAL RULES:
-- Translate EVERYTHING to {targetLanguage} - no English words allowed
-- Use native script only
-- Translate ALL parts including names to appropriate {targetLanguage} equivalent
-- No explanations, quotes, or extra text
-- Keep same meaning and tone
-- No repetition of words
-- If it's a task instruction, translate the entire instruction
-- If it's an application/benefit text, translate completely
-- DO NOT CUT or truncate the translation - translate the complete text
-- Ensure the full meaning is preserved
-
-Output only the pure {targetLanguage} translation.`
 
 
-    };
-    
-    // Load saved prompts or use defaults
-    loadSavedPrompts();
-}
 
-function loadSavedPrompts() {
-    const savedTaskPrompt = localStorage.getItem('customTaskPrompt');
-    const savedTranslationPrompt = localStorage.getItem('customTranslationPrompt');
-
-    
-    if (savedTaskPrompt) {
-        document.getElementById('taskGenerationPrompt').value = savedTaskPrompt;
-    } else {
-        document.getElementById('taskGenerationPrompt').value = defaultPrompts.taskGeneration;
-    }
-    
-    if (savedTranslationPrompt) {
-        document.getElementById('translationPrompt').value = savedTranslationPrompt;
-    } else {
-        document.getElementById('translationPrompt').value = defaultPrompts.translation;
-    }
-    
-
-}
-
-// Show prompts modal
-function showPromptsModal() {
-    DOM.promptsModal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function hidePromptsModal() {
-    DOM.promptsModal.classList.add('hidden');
-    document.body.style.overflow = 'auto';
-}
-
-function toggleEdit(elementId) {
-    const element = document.getElementById(elementId);
-    const editBtn = element.parentElement.querySelector('.edit-btn');
-    const saveBtn = element.parentElement.querySelector('.save-btn');
-    const cancelBtn = element.parentElement.querySelector('.cancel-btn');
-    
-    element.classList.add('editing');
-    editBtn.classList.add('hidden');
-    saveBtn.classList.remove('hidden');
-    cancelBtn.classList.remove('hidden');
-    element.focus();
-}
-
-function savePrompt(elementId) {
-    const element = document.getElementById(elementId);
-    const editBtn = element.parentElement.querySelector('.edit-btn');
-    const saveBtn = element.parentElement.querySelector('.save-btn');
-    const cancelBtn = element.parentElement.querySelector('.cancel-btn');
-    
-    // Save to localStorage
-        if (elementId === 'taskGenerationPrompt') {
-        localStorage.setItem('customTaskPrompt', element.value);
-    } else if (elementId === 'translationPrompt') {
-        localStorage.setItem('customTranslationPrompt', element.value);
-    }
-    
-    element.classList.remove('editing');
-    editBtn.classList.remove('hidden');
-    saveBtn.classList.add('hidden');
-    cancelBtn.classList.add('hidden');
-    
-    showSuccess('Prompt saved successfully!');
-}
-
-function cancelEdit(elementId) {
-    const element = document.getElementById(elementId);
-    const editBtn = element.parentElement.querySelector('.edit-btn');
-    const saveBtn = element.parentElement.querySelector('.save-btn');
-    const cancelBtn = element.parentElement.querySelector('.cancel-btn');
-    
-    // Restore original value
-    if (elementId === 'taskGenerationPrompt') {
-        const saved = localStorage.getItem('customTaskPrompt') || defaultPrompts.taskGeneration;
-        element.value = saved;
-    } else if (elementId === 'translationPrompt') {
-        const saved = localStorage.getItem('customTranslationPrompt') || defaultPrompts.translation;
-        element.value = saved;
-    }
-    
-    element.classList.remove('editing');
-    editBtn.classList.remove('hidden');
-    saveBtn.classList.add('hidden');
-    cancelBtn.classList.add('hidden');
-}
-
-function resetToDefaultPrompts() {
-    if (confirm('Are you sure you want to reset to default prompts? This will clear all custom changes.')) {
-        localStorage.removeItem('customTaskPrompt');
-        localStorage.removeItem('customTranslationPrompt');
-        document.getElementById('taskGenerationPrompt').value = defaultPrompts.taskGeneration;
-        document.getElementById('translationPrompt').value = defaultPrompts.translation;
-        
-        showSuccess('Prompts reset to defaults!');
-    }
-}
-
-function copyToClipboard(elementId) {
-    const element = document.getElementById(elementId);
-    const text = element.value || element.textContent;
-    
-    navigator.clipboard.writeText(text).then(() => {
-        showSuccess('Prompt copied to clipboard!');
-    }).catch(() => {
-        // Fallback for older browsers
-        element.select();
-        document.execCommand('copy');
-        showSuccess('Prompt copied to clipboard!');
-    });
-}
-
-// Override the createEmployabilityPrompt function to use custom prompts
-function createEmployabilityPrompt(data) {
-    const customPrompt = document.getElementById('taskGenerationPrompt').value || defaultPrompts.taskGeneration;
-    
-    // Replace placeholders with actual data
-    return customPrompt
-        .replace(/{taskCount}/g, data['task-count'])
-        .replace(/{education-level}/g, data['education-level'])
-        .replace(/{education-year}/g, data['education-year'])
-        .replace(/{semester}/g, data.semester)
-        .replace(/{program}/g, data.program)
-        .replace(/{main-skill}/g, data['main-skill']);
-}
 
 
 
@@ -1396,236 +1176,7 @@ function removeApiKey(provider) {
     console.log(`${message} and reset to default`);
 }
 
-// Custom Prompts Management
-let customPrompts = [];
-let editingPromptId = null;
 
-// Load custom prompts from localStorage
-function loadCustomPrompts() {
-    const saved = localStorage.getItem('customPrompts');
-    customPrompts = saved ? JSON.parse(saved) : [];
-    renderCustomPrompts();
-}
-
-// Save custom prompts to localStorage
-function saveCustomPrompts() {
-    localStorage.setItem('customPrompts', JSON.stringify(customPrompts));
-}
-
-// Render custom prompts list
-function renderCustomPrompts() {
-    const container = document.getElementById('customPromptsList');
-    if (!container) return;
-    
-    if (customPrompts.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">No custom prompts yet. Click "Add New Prompt" to create one.</p>';
-        return;
-    }
-    
-    container.innerHTML = customPrompts.map(prompt => `
-        <div class="custom-prompt-item">
-            <div class="custom-prompt-header">
-                <div class="custom-prompt-name">${prompt.name}</div>
-                <div class="custom-prompt-actions">
-                    <button class="edit-prompt" onclick="editCustomPrompt('${prompt.id}')" title="Edit prompt">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="use-prompt" onclick="useCustomPrompt('${prompt.id}')" title="Use this prompt">
-                        <i class="fas fa-play"></i>
-                    </button>
-                    <button class="delete-prompt" onclick="deleteCustomPrompt('${prompt.id}')" title="Delete prompt">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="custom-prompt-content">${prompt.content.substring(0, 200)}${prompt.content.length > 200 ? '...' : ''}</div>
-            <div class="custom-prompt-meta">
-                <span><i class="fas fa-tag"></i> ${prompt.type}</span>
-                <span><i class="fas fa-calendar"></i> ${new Date(prompt.createdAt).toLocaleDateString()}</span>
-                ${prompt.description ? `<span><i class="fas fa-info-circle"></i> ${prompt.description}</span>` : ''}
-            </div>
-        </div>
-    `).join('');
-}
-
-// Add new custom prompt
-function addCustomPrompt() {
-    editingPromptId = null;
-    document.getElementById('customPromptModalTitle').textContent = 'Add New Custom Prompt';
-    document.getElementById('customPromptName').value = '';
-    document.getElementById('customPromptDescription').value = '';
-    document.getElementById('customPromptContent').value = '';
-    document.getElementById('customPromptType').value = 'task-generation';
-    document.getElementById('customPromptModal').classList.remove('hidden');
-}
-
-// Edit custom prompt
-function editCustomPrompt(promptId) {
-    const prompt = customPrompts.find(p => p.id === promptId);
-    if (!prompt) return;
-    
-    editingPromptId = promptId;
-    document.getElementById('customPromptModalTitle').textContent = 'Edit Custom Prompt';
-    document.getElementById('customPromptName').value = prompt.name;
-    document.getElementById('customPromptDescription').value = prompt.description || '';
-    document.getElementById('customPromptContent').value = prompt.content;
-    document.getElementById('customPromptType').value = prompt.type;
-    document.getElementById('customPromptModal').classList.remove('hidden');
-}
-
-// Save custom prompt
-function saveCustomPrompt() {
-    const name = document.getElementById('customPromptName').value.trim();
-    const description = document.getElementById('customPromptDescription').value.trim();
-    const content = document.getElementById('customPromptContent').value.trim();
-    const type = document.getElementById('customPromptType').value;
-    
-    if (!name || !content) {
-        alert('Please fill in all required fields.');
-        return;
-    }
-    
-    if (editingPromptId) {
-        // Edit existing prompt
-        const index = customPrompts.findIndex(p => p.id === editingPromptId);
-        if (index !== -1) {
-            customPrompts[index] = {
-                ...customPrompts[index],
-                name,
-                description,
-                content,
-                type,
-                updatedAt: new Date().toISOString()
-            };
-        }
-    } else {
-        // Add new prompt
-        const newPrompt = {
-            id: Date.now().toString(),
-            name,
-            description,
-            content,
-            type,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        customPrompts.push(newPrompt);
-    }
-    
-    saveCustomPrompts();
-    renderCustomPrompts();
-    closeCustomPromptModal();
-    showSuccess(`Custom prompt ${editingPromptId ? 'updated' : 'added'} successfully!`);
-}
-
-// Use custom prompt
-function useCustomPrompt(promptId) {
-    const prompt = customPrompts.find(p => p.id === promptId);
-    if (!prompt) return;
-    
-    if (prompt.type === 'task-generation') {
-        document.getElementById('taskGenerationPrompt').value = prompt.content;
-        showSuccess(`Task generation prompt updated with "${prompt.name}"`);
-        } else {
-        // For custom type, show a selection dialog
-        document.getElementById('taskGenerationPrompt').value = prompt.content;
-        showSuccess(`Task generation prompt updated with "${prompt.name}"`);
-    }
-}
-
-// Delete custom prompt
-function deleteCustomPrompt(promptId) {
-    if (!confirm('Are you sure you want to delete this custom prompt?')) return;
-    
-    customPrompts = customPrompts.filter(p => p.id !== promptId);
-    saveCustomPrompts();
-    renderCustomPrompts();
-    showSuccess('Custom prompt deleted successfully!');
-}
-
-// Close custom prompt modal
-function closeCustomPromptModal() {
-    document.getElementById('customPromptModal').classList.add('hidden');
-    editingPromptId = null;
-}
-
-// Export prompts
-function exportPrompts() {
-    const data = {
-        customPrompts,
-        taskGenerationPrompt: document.getElementById('taskGenerationPrompt').value,
-        translationPrompt: document.getElementById('translationPrompt').value,
-
-        exportDate: new Date().toISOString()
-    };
-    
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `plat-skill-prompts-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    showSuccess('Prompts exported successfully!');
-}
-
-// Import prompts
-function importPrompts() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = JSON.parse(e.target.result);
-                
-                if (data.customPrompts) {
-                    customPrompts = data.customPrompts;
-                    saveCustomPrompts();
-                    renderCustomPrompts();
-                }
-                
-                if (data.taskGenerationPrompt) {
-                    document.getElementById('taskGenerationPrompt').value = data.taskGenerationPrompt;
-                }
-                
-                if (data.translationPrompt) {
-                    document.getElementById('translationPrompt').value = data.translationPrompt;
-                }
-                
-                
-                
-                showSuccess('Prompts imported successfully!');
-            } catch (error) {
-                alert('Error importing prompts. Please check the file format.');
-            }
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-}
-
-// Initialize custom prompts when app loads
-function initCustomPrompts() {
-    loadCustomPrompts();
-    
-    // Add event listener for custom prompt modal close
-    document.getElementById('closeCustomPromptModal')?.addEventListener('click', closeCustomPromptModal);
-    
-    // Close modal when clicking outside
-    document.getElementById('customPromptModal')?.addEventListener('click', (e) => {
-        if (e.target === document.getElementById('customPromptModal')) {
-            closeCustomPromptModal();
-        }
-    });
-}
 
 // Excel Translation Functions
 
