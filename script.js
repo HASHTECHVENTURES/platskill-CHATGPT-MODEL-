@@ -178,10 +178,19 @@ const DOM = {
 
 // Initialize application
 function initApp() {
+    console.log('Initializing PLAT SKILL application...');
+    
     // Load saved API keys first
     loadConfigFromStorage();
     
     DOM.init();
+    
+    // Debug: Check if Gemini Q&A elements are found
+    console.log('Gemini Q&A elements found:');
+    console.log('- Question textarea:', !!DOM.geminiQuestion);
+    console.log('- Ask button:', !!DOM.askGeminiBtn);
+    console.log('- Response div:', !!DOM.geminiResponse);
+    console.log('- Loading div:', !!DOM.geminiLoading);
     
     // Event Listeners
     DOM.form?.addEventListener('submit', handleFormSubmit);
@@ -204,17 +213,44 @@ function initApp() {
     });
     
     // Gemini Q&A event listeners
-    DOM.askGeminiBtn?.addEventListener('click', handleGeminiQuestion);
-    DOM.geminiQuestion?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && e.ctrlKey) {
-            handleGeminiQuestion();
-        }
-    });
+    if (DOM.askGeminiBtn) {
+        console.log('Adding click listener to Ask Gemini button');
+        DOM.askGeminiBtn.addEventListener('click', handleGeminiQuestion);
+    }
+    
+    if (DOM.geminiQuestion) {
+        console.log('Adding keydown listener to Gemini question textarea');
+        DOM.geminiQuestion.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                handleGeminiQuestion();
+            }
+        });
+    }
+    
+    // Test: Make sure Gemini Q&A section is visible
+    const geminiSection = document.querySelector('.gemini-qa-section');
+    if (geminiSection) {
+        console.log('✅ Gemini Q&A section found and visible');
+        geminiSection.style.border = '2px solid red'; // Temporary border for debugging
+    } else {
+        console.log('❌ Gemini Q&A section not found');
+    }
     
 
     
     // Initialize API keys
     loadSavedApiKeys();
+    
+    // Test: Make sure Gemini Q&A section is visible
+    setTimeout(() => {
+        const geminiSection = document.querySelector('.gemini-qa-section');
+        if (geminiSection) {
+            console.log('✅ Gemini Q&A section found and visible');
+            geminiSection.style.border = '2px solid green';
+        } else {
+            console.log('❌ Gemini Q&A section not found');
+        }
+    }, 1000);
     
 
 }
@@ -1308,67 +1344,45 @@ async function handleGeminiQuestion() {
 
 // Direct Gemini API call for Q&A
 async function askGeminiDirect(question) {
-    return new Promise((resolve, reject) => {
-        const data = JSON.stringify({
-            contents: [{
-                parts: [{
-                    text: question
-                }]
-            }],
-            generationConfig: {
-                temperature: 0.7,
-                topK: 40,
-                topP: 0.95,
-                maxOutputTokens: 2048,
-            }
-        });
-
-        const options = {
-            hostname: 'generativelanguage.googleapis.com',
-            port: 443,
-            path: `/v1beta/models/gemini-2.0-flash:generateContent?key=${CONFIG.GEMINI_API_KEYS[0]}`,
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${CONFIG.GEMINI_API_KEYS[0]}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Content-Length': data.length
-            }
-        };
-
-        const req = https.request(options, (res) => {
-            let responseData = '';
-
-            res.on('data', (chunk) => {
-                responseData += chunk;
-            });
-
-            res.on('end', () => {
-                try {
-                    const response = JSON.parse(responseData);
-                    
-                    if (response.error) {
-                        reject(new Error(`API Error: ${response.error.message}`));
-                        return;
-                    }
-
-                    if (response.candidates && response.candidates[0] && response.candidates[0].content) {
-                        const text = response.candidates[0].content.parts[0].text;
-                        resolve(text);
-                    } else {
-                        reject(new Error('No response from Gemini'));
-                    }
-                } catch (error) {
-                    reject(new Error(`Failed to parse response: ${error.message}`));
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: question
+                    }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    topK: 40,
+                    topP: 0.95,
+                    maxOutputTokens: 2048,
                 }
-            });
+            })
         });
 
-        req.on('error', (error) => {
-            reject(new Error(`Request failed: ${error.message}`));
-        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-        req.write(data);
-        req.end();
-    });
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(`API Error: ${data.error.message}`);
+        }
+
+        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+            return data.candidates[0].content.parts[0].text;
+        } else {
+            throw new Error('No response from Gemini');
+        }
+    } catch (error) {
+        throw new Error(`Request failed: ${error.message}`);
+    }
 }
 
 // Handle Excel translation
