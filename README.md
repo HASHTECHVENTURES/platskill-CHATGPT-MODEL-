@@ -1,14 +1,19 @@
 # PLAT SKILL - Employability Task Generator
 
-A web-based application that generates personalized employability tasks for students using AI. The system supports multiple Indian languages and provides complete customization of prompts and API keys.
+A modern web-based application that generates personalized, bite-sized employability tasks for students using AI. Built with vanilla JavaScript, HTML5, and CSS3.
+
+![PLAT SKILL](https://img.shields.io/badge/PLAT-SKILL-blue?style=for-the-badge&logo=graduation-cap)
+![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow?style=for-the-badge&logo=javascript)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
 
 ## 🌟 Features
 
 ### **Core Functionality**
 - **Personalized Task Generation**: Creates employability tasks based on student profile
-- **Multi-language Support**: 8 Indian languages (Hindi, Bengali, Telugu, Tamil, Marathi, Malayalam, Kannada)
+- **Multi-language Support**: English, Hindi, and Marathi with instant translation
 - **Excel Export**: Download generated tasks as Excel files
-- **Responsive Design**: Works on desktop and mobile devices
+- **Responsive Design**: Works perfectly on desktop, tablet, and mobile devices
 
 ### **Advanced Customization**
 - **Editable Prompts**: Customize task generation and translation prompts
@@ -18,40 +23,38 @@ A web-based application that generates personalized employability tasks for stud
 
 ## 🚀 Quick Start
 
-1. **Open the Application**: Open `index.html` in your web browser
-2. **Fill the Form**: Enter student details and preferences
-3. **Generate Tasks**: Click "Generate Employability Tasks"
-4. **Customize (Optional)**: Click "Show Prompts" to customize AI prompts and API keys
+### **Option 1: Direct File Opening**
+1. **Download/Clone** this repository
+2. **Open** `index.html` in your web browser
+3. **Start using** the application immediately
 
-## ⚙️ Configuration
+### **Option 2: Local Server (Recommended)**
+```bash
+# Navigate to project directory
+cd plat-skill-task-generator
 
-### **API Keys Setup**
-1. Click "Show Prompts" button
-2. Navigate to "API Keys Management" section
-3. Enter your API keys:
-   - **OpenRouter API Key** (Primary): Get from [OpenRouter](https://openrouter.ai/keys)
-   - **Gemini API Key 1** (Fallback): Get from [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - **Gemini API Key 2** (Optional): Backup key for reliability
-4. Click "Test" to verify each key
-5. Click "Save API Keys" to persist settings
+# Using Python 3
+python -m http.server 8000
 
-### **Custom Prompts**
-1. Click "Show Prompts" button
-2. Edit task generation or translation prompts
-3. Use placeholders like `{taskCount}`, `{name}`, `{program}`, etc.
-4. Click "Save" to apply changes
+# Using Python 2
+python -m SimpleHTTPServer 8000
+
+# Using Node.js
+npx http-server
+```
+
+Then open: `http://localhost:8000`
 
 ## 📋 Form Fields
 
 ### **Student Profile**
-- **Full Name**: Student's complete name
 - **Education Level**: High School, Diploma, Bachelor's, Master's, PhD
 - **Education Year**: 1st Year to Final Year
 - **Semester**: 1st to 8th Semester
 
 ### **Program & Skills**
-- **Program/Field**: Computer Science, Engineering, Business, etc.
-- **Main Skill Focus**: Communication, Problem-solving, Leadership, etc.
+- **Program/Field**: Computer Science, Engineering, Business, Psychology, Marketing, Finance, Healthcare, Design, Education, Other
+- **Main Skill Focus**: Communication, Problem-Solving, Leadership, Collaboration, Emotional Intelligence, Learning Agility, Creativity and Innovation, Growth Mindset, Multifaceted Literacy Skills, Productivity, Decision-Making, Entrepreneurship
 
 ### **Task Preferences**
 - **Skill Level**: Low (Beginner), Medium (Intermediate), High (Advanced), All Levels
@@ -63,12 +66,25 @@ A web-based application that generates personalized employability tasks for stud
 |----------|------|--------|
 | English | en | Latin |
 | Hindi | hi | Devanagari |
-| Bengali | bn | Bengali |
-| Telugu | te | Telugu |
-| Tamil | ta | Tamil |
 | Marathi | mr | Devanagari |
-| Malayalam | ml | Malayalam |
-| Kannada | kn | Kannada |
+
+## ⚙️ Configuration
+
+### **API Keys Setup**
+1. Click **"Show & Edit Prompts"** button
+2. Navigate to **"API Keys Management"** section
+3. Enter your API keys:
+   - **OpenRouter API Key** (Primary): Get from [OpenRouter](https://openrouter.ai/keys)
+   - **Gemini API Key 1** (Fallback): Get from [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - **Gemini API Key 2** (Optional): Backup key for reliability
+4. Click **"Test"** to verify each key
+5. Click **"Save API Keys"** to persist settings
+
+### **Custom Prompts**
+1. Click **"Show & Edit Prompts"** button
+2. Edit task generation or translation prompts
+3. Use placeholders like `{taskCount}`, `{name}`, `{program}`, etc.
+4. Click **"Save"** to apply changes
 
 ## 🔧 Technical Details
 
@@ -92,10 +108,12 @@ A web-based application that generates personalized employability tasks for stud
 ## 📁 File Structure
 
 ```
+plat-skill-task-generator/
 ├── index.html          # Main application interface
 ├── styles.css          # Styling and responsive design
 ├── script.js           # Core functionality and AI integration
-└── README.md           # This documentation
+├── README.md           # This documentation
+└── .gitignore          # Git ignore rules
 ```
 
 ## 🎯 Use Cases
@@ -128,10 +146,22 @@ Edit the task generation prompt template to change output format and requirement
 ## 📞 Support
 
 For issues or questions:
-1. Check browser console for error messages
+1. Check browser console for error messages (F12 → Console)
 2. Verify API keys are valid and have sufficient credits
 3. Ensure all required form fields are filled
 4. Try refreshing the page if issues persist
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🔄 Updates
 
@@ -141,6 +171,15 @@ For issues or questions:
 - **v1.3**: Added API key management
 - **v1.4**: Enhanced UI and error handling
 
+## 🙏 Acknowledgments
+
+- **Google Gemini AI** for providing the AI capabilities
+- **OpenRouter** for API access to multiple AI models
+- **Font Awesome** for the beautiful icons
+- **SheetJS** for Excel export functionality
+
 ---
 
 **PLAT SKILL** - Empowering students with bite-sized employability skills for career success! 🚀
+
+Made with ❤️ for the education community.
