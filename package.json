@@ -1,0 +1,23 @@
+{
+  "name": "gemini-cli",
+  "version": "1.0.0",
+  "description": "A simple CLI tool to chat with Google Gemini AI",
+  "main": "gemini-cli.js",
+  "scripts": {
+    "start": "node gemini-cli.js",
+    "chat": "node gemini-cli.js"
+  },
+  "keywords": [
+    "gemini",
+    "ai",
+    "chat",
+    "cli",
+    "google",
+    "terminal"
+  ],
+  "author": "PLAT SKILL Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

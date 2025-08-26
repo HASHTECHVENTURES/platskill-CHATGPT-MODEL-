@@ -165,6 +165,13 @@ const DOM = {
         this.previewOriginalFile = document.getElementById('previewOriginalFile');
         this.previewTargetLanguage = document.getElementById('previewTargetLanguage');
         this.previewRowCount = document.getElementById('previewRowCount');
+        
+        // Gemini Q&A elements
+        this.geminiQuestion = document.getElementById('geminiQuestion');
+        this.askGeminiBtn = document.getElementById('askGeminiBtn');
+        this.geminiResponse = document.getElementById('geminiResponse');
+        this.geminiResponseText = document.getElementById('geminiResponseText');
+        this.geminiLoading = document.getElementById('geminiLoading');
 
     }
 };
@@ -193,6 +200,14 @@ function initApp() {
     DOM.excelPreviewModal?.addEventListener('click', (e) => {
         if (e.target === DOM.excelPreviewModal) {
             hideExcelPreviewModal();
+        }
+    });
+    
+    // Gemini Q&A event listeners
+    DOM.askGeminiBtn?.addEventListener('click', handleGeminiQuestion);
+    DOM.geminiQuestion?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.ctrlKey) {
+            handleGeminiQuestion();
         }
     });
     
@@ -476,8 +491,7 @@ TASK DISTRIBUTION:
 - Tasks must be self-contained (no external resources needed)
 - Focus on employability skills relevant to ${data.program}
 
-SPECIAL INSTRUCTION:
-- Include at least one task that asks students to research and explain "What is Orange Digital?" and how it relates to their field of study and career goals.
+
 
 OUTPUT FORMAT:
 Create a table with exactly ${taskCount} rows in this format:
@@ -1258,6 +1272,103 @@ function handleExcelFileSelect(event) {
     };
     
     reader.readAsArrayBuffer(file);
+}
+
+// Handle Gemini Q&A
+async function handleGeminiQuestion() {
+    const question = DOM.geminiQuestion.value.trim();
+    
+    if (!question) {
+        displayError('Please enter a question');
+        return;
+    }
+    
+    try {
+        // Show loading
+        DOM.geminiLoading.classList.remove('hidden');
+        DOM.geminiResponse.classList.add('hidden');
+        DOM.askGeminiBtn.disabled = true;
+        
+        // Ask Gemini
+        const response = await askGeminiDirect(question);
+        
+        // Hide loading and show response
+        DOM.geminiLoading.classList.add('hidden');
+        DOM.geminiResponse.classList.remove('hidden');
+        DOM.geminiResponseText.textContent = response;
+        DOM.askGeminiBtn.disabled = false;
+        
+    } catch (error) {
+        console.error('Gemini Q&A error:', error);
+        DOM.geminiLoading.classList.add('hidden');
+        DOM.askGeminiBtn.disabled = false;
+        displayError('Failed to get response from Gemini: ' + error.message);
+    }
+}
+
+// Direct Gemini API call for Q&A
+async function askGeminiDirect(question) {
+    return new Promise((resolve, reject) => {
+        const data = JSON.stringify({
+            contents: [{
+                parts: [{
+                    text: question
+                }]
+            }],
+            generationConfig: {
+                temperature: 0.7,
+                topK: 40,
+                topP: 0.95,
+                maxOutputTokens: 2048,
+            }
+        });
+
+        const options = {
+            hostname: 'generativelanguage.googleapis.com',
+            port: 443,
+            path: `/v1beta/models/gemini-2.0-flash:generateContent?key=${CONFIG.GEMINI_API_KEYS[0]}`,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': data.length
+            }
+        };
+
+        const req = https.request(options, (res) => {
+            let responseData = '';
+
+            res.on('data', (chunk) => {
+                responseData += chunk;
+            });
+
+            res.on('end', () => {
+                try {
+                    const response = JSON.parse(responseData);
+                    
+                    if (response.error) {
+                        reject(new Error(`API Error: ${response.error.message}`));
+                        return;
+                    }
+
+                    if (response.candidates && response.candidates[0] && response.candidates[0].content) {
+                        const text = response.candidates[0].content.parts[0].text;
+                        resolve(text);
+                    } else {
+                        reject(new Error('No response from Gemini'));
+                    }
+                } catch (error) {
+                    reject(new Error(`Failed to parse response: ${error.message}`));
+                }
+            });
+        });
+
+        req.on('error', (error) => {
+            reject(new Error(`Request failed: ${error.message}`));
+        });
+
+        req.write(data);
+        req.end();
+    });
 }
 
 // Handle Excel translation

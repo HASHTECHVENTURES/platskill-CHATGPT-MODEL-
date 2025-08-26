@@ -15,8 +15,41 @@
             <div class="header-content">
                 <h1><i class="fas fa-graduation-cap"></i> PLAT SKILL</h1>
                 <p>Employability Task Generator - Bite-Sized Skills for Career Success</p>
+                <div class="orange-digital-brand">
+                    <span class="brand-text">Powered by Orange Digital</span>
+                </div>
             </div>
         </header>
+
+        <!-- Gemini Q&A Section -->
+        <section class="gemini-qa-section">
+            <div class="qa-container">
+                <h2><i class="fas fa-robot"></i> Ask Gemini AI</h2>
+                <p>Ask any question and get instant answers from Google Gemini AI</p>
+                
+                <div class="qa-form">
+                    <div class="question-input-group">
+                        <textarea id="geminiQuestion" placeholder="Type your question here..." rows="3"></textarea>
+                        <button type="button" id="askGeminiBtn" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Ask Gemini
+                        </button>
+                    </div>
+                    
+                    <div id="geminiResponse" class="gemini-response hidden">
+                        <div class="response-header">
+                            <i class="fas fa-robot"></i>
+                            <span>Gemini's Response:</span>
+                        </div>
+                        <div id="geminiResponseText" class="response-text"></div>
+                    </div>
+                    
+                    <div id="geminiLoading" class="gemini-loading hidden">
+                        <div class="loading-spinner"></div>
+                        <p>Gemini is thinking...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <!-- Main Form -->
         <main class="main-content">
