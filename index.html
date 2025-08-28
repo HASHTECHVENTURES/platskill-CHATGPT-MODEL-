@@ -67,24 +67,8 @@
                 </div>
 
                 <div class="form-section">
-                    <h2><i class="fas fa-briefcase"></i> Program & Skills</h2>
+                    <h2><i class="fas fa-briefcase"></i> Skills</h2>
                     <div class="form-grid">
-                        <div class="form-group">
-                            <label for="program">Program/Field of Study *</label>
-                            <select id="program" name="program" required>
-                                <option value="">Select Program</option>
-                                <option value="computer-science">Computer Science</option>
-                                <option value="engineering">Engineering</option>
-                                <option value="business">Business Administration</option>
-                                <option value="psychology">Psychology</option>
-                                <option value="marketing">Marketing</option>
-                                <option value="finance">Finance</option>
-                                <option value="healthcare">Healthcare</option>
-                                <option value="design">Design</option>
-                                <option value="education">Education</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
                         <div class="form-group">
                             <label for="main-skill">Main Skill Focus *</label>
                             <select id="main-skill" name="main-skill" required>
@@ -128,6 +112,29 @@
                                 <option value="9">9 Tasks</option>
                                 <option value="12">12 Tasks</option>
                             </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prompt Editor Section -->
+                <div class="form-section">
+                    <h2><i class="fas fa-edit"></i> Customize System Prompt (Advanced)</h2>
+                    <div class="form-group">
+                        <label for="custom-prompt">Edit System Prompt</label>
+                        <textarea id="custom-prompt" name="custom-prompt" rows="12" placeholder="Edit the system prompt here... You can use placeholders like {education-level}, {education-year}, {semester}, {main-skill}, {skill-level}, {task-count}"></textarea>
+                        <div class="prompt-controls">
+                            <button type="button" id="reset-prompt" class="btn btn-outline">
+                                <i class="fas fa-undo"></i> Reset to Default
+                            </button>
+                            <button type="button" id="test-prompt" class="btn btn-secondary">
+                                <i class="fas fa-vial"></i> Test Prompt
+                            </button>
+                            <button type="button" id="save-prompt" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Prompt
+                            </button>
+                        </div>
+                        <div class="prompt-info">
+                            <small><i class="fas fa-info-circle"></i> Available placeholders: {education-level}, {education-year}, {semester}, {main-skill}, {skill-level}, {task-count}</small>
                         </div>
                     </div>
                 </div>
@@ -210,6 +217,21 @@
         <footer class="footer">
             <p>&copy; 2025 PLAT SKILL Employability Task Generator. Powered by Gemini AI.</p>
         </footer>
+    </div>
+
+    </div>
+
+    <!-- Test Results Modal -->
+    <div id="testResultsModal" class="test-results-modal">
+        <div class="test-results-content">
+            <div class="test-results-header">
+                <h3><i class="fas fa-vial"></i> Prompt Test Results</h3>
+                <button class="close-modal" onclick="closeTestModal()">&times;</button>
+            </div>
+            <div id="testResultsBody" class="test-results-body">
+                <!-- Test results will be populated here -->
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
