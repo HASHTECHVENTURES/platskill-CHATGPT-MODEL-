@@ -423,55 +423,44 @@ function createEmployabilityPrompt(data) {
     
     const skillSubskills = skillMapping[mainSkill] || mainSkill;
     
-    return `Create ${taskCount} employability tasks following these STRICT guidelines:
+    return `You are an instructional designer creating ${taskCount} bite-sized "Level-Up Tasks" for Indian UG or PG students.
 
-STUDENT PROFILE:
-- Education Level: ${data['education-level']}
-- Education Year: ${data['education-year']}
-- Semester: ${data['semester']}
-- Program: ${data.program}
-- Main Skill Focus: ${mainSkill}
+LEARNER PROFILE
+* Education Level (UG / PG): ${data['education-level']}
+* Year / Semester: ${data['education-year']}, ${data.semester}
+* Target Employability Skill: ${mainSkill}
 
-HEADING REQUIREMENTS (3-7 words):
-- Not too casual, not too formal/plain
-- Interesting, hook-like with idioms/quotes
-- Related to the task/content
-- Examples: "Think Like a CEO", "The 7-Second Rule", "Master the Art of..."
+GLOBAL OUTPUT  ——  STRICT SCHEMA
+* Return exactly ${taskCount} pipe-separated table rows, no extra text:
+  Skill Level | Bloom Level | Heading | Content | Task | Application
+* Skill–Bloom mapping per row:  
+    Low → Remembering / Understanding Medium → Applying / Analyzing High → Evaluating / Creating  
+* Word windows (model MUST refuse if any row breaks them):  
+    Heading 3–7 w Content 40–50 w Task 50–80 w Application 10–20 w
 
-- **No Repetition**: Avoid repeating words unnecessarily
-- **Hook-Style**: Make them catchy and memorable in any language
+SECTION & QUALITY RULES  ——  (numbers match your checklist)
 
-CONTENT REQUIREMENTS (around 50 words):
-- Related to skill/task/heading/education level
-- Helpful for student upskilling - something they learn from
-- Formal but engaging - hook-like, not casual
-- Simple language
-- Include: Research, New Technique, Tips and Tricks, or Case study (prefer Indian examples)
-- Each content should be UNIQUE - avoid repetitive formatting
-- Common to all programs in the paper code
-- Not repetitive - one concept/tip should not repeat
-- Not too technical
-- **Translation-Friendly**: Use language that translates naturally to Indian languages
-- **Cultural Context**: Include Indian examples that work across all regions
+▶ Skill Level  
+* Output Low / Medium / High (as provided in the user prompt).
 
-TASK REQUIREMENTS (50-80 words):
-- Related to skill/content/heading/education level
-- Only text box writing - avoid uploads
-- Simple language
-- Action and application-oriented, learning to do something new, or observe something new
-- NOT academic
-- Interesting and fun to do
-- Requires not more than 5 minutes
-- Requires not more than 80-worded answer
-- Not too open-ended, give specific instructions
-- **Translation-Ready**: Use language that translates clearly to all Indian languages
-- **Universal Terms**: Avoid English-specific idioms that don't translate well
+▶ Bloom Level  
+* Choose ONE Bloom category from the mapping above—no other words.
 
-APPLICATION REQUIREMENTS (10-20 words, full sentence):
-- Concise and specific
-- Related to skill/content/task/heading/education level
-- How will it help the student from that paper code to do this task
-- **Translation-Friendly**: Keep sentences simple for easy translation
+▶ Heading (3–7 words)  
+1–4. Balanced tone; hook-style idiom/quote OK; tied to task.
+
+▶ Content (40–50 words)  
+5–14. Relate to target skill; include *at least one* engaging fact, theory, index, hidden approach *or* Indian mini-case; unique; plain English; complexity aligned with Bloom level.
+
+▶ Task (50–80 words)  
+15–23. Text-box response only; fun, ≤5-min action; response ≤80 words; specific; cognitive demand matches Bloom level (e.g., recall fact for Remembering, design improvement for Creating).
+
+▶ Application (10–20 words)  
+24–28. One full sentence stating real-world benefit; phrasing depth also matches Bloom level.
+
+LANGUAGE & CULTURE
+* Simple English that translates cleanly to Indian languages.  
+* Pan-India references (UPI, local markets, campus fest).
 
 SKILL MAPPING:
 - Main Skill: ${mainSkill}
@@ -483,21 +472,7 @@ TASK DISTRIBUTION:
 - Tasks must be self-contained (no external resources needed)
 - Focus on employability skills relevant to ${data.program}
 
-
-
-OUTPUT FORMAT:
-Create a table with exactly ${taskCount} rows in this format:
-
-| Skill Level | Heading | Content | Task | Application |
-|-------------|---------|---------|------|-------------|
-| [Low/Medium/High] | [3-7 word hook-like title] | [~50 words: research/technique/tips/Indian case study] | [50-80 words: 5-min text task] | [10-20 words: full sentence benefit] |
-
-Example format:
-| Medium | The 7-Second Rule | Research shows recruiters spend just 7 seconds on first impressions. Indian companies like TCS and Infosys use this principle. | Write a 30-second elevator pitch for a ${data.program} role. Include your unique value proposition. | This skill transforms you into an interview ninja.
-
-
-
-Make tasks engaging, practical, and specifically tailored for ${data.program} students at ${data['education-level']} level. Ensure each task follows the exact word limits and formatting requirements while being engaging and practical.`;
+END OF INSTRUCTIONS`;
 }
 
 // Parse employability tasks from AI response
@@ -509,13 +484,14 @@ function parseEmployabilityTasks(text, studentData) {
         if (line.includes('|') && !line.includes('Skill Level') && !line.includes('---')) {
             const columns = line.split('|').map(col => col.trim()).filter(col => col);
             
-            if (columns.length >= 5) {
+            if (columns.length >= 6) {
                 tasks.push({
                     skillLevel: columns[0],
-                    heading: columns[1],
-                    content: columns[2],
-                    task: columns[3],
-                    application: columns[4]
+                    bloomLevel: columns[1],
+                    heading: columns[2],
+                    content: columns[3],
+                    task: columns[4],
+                    application: columns[5]
                 });
             }
         }
@@ -735,6 +711,7 @@ function populateTasksTable(tasks) {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td><span class="skill-level ${task.skillLevel.toLowerCase()}">${task.skillLevel}</span></td>
+            <td><span class="bloom-level">${task.bloomLevel || 'N/A'}</span></td>
             <td><strong>${task.heading}</strong></td>
             <td>${task.content}</td>
             <td>${task.task}</td>

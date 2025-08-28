@@ -510,6 +510,19 @@ body {
     color: #721c24;
 }
 
+/* Bloom Level Badges */
+.bloom-level {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    background: #f8f9fa;
+    color: #495057;
+    border: 1px solid #dee2e6;
+}
+
 /* Footer */
 .footer {
     text-align: center;
