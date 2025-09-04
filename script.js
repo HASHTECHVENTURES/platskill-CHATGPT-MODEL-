@@ -354,14 +354,16 @@ function parseEmployabilityTasks(text, studentData) {
         if (line.includes('|') && !line.includes('Skill Level') && !line.includes('---')) {
             const columns = line.split('|').map(col => col.trim()).filter(col => col);
             
-            if (columns.length >= 6) {
+            if (columns.length >= 8) {
                 tasks.push({
                     skillLevel: columns[0],
                     bloomLevel: columns[1],
-                    heading: columns[2],
-                    content: columns[3],
-                    task: columns[4],
-                    application: columns[5]
+                    mainSkill: columns[2],
+                    subSkill: columns[3],
+                    heading: columns[4],
+                    content: columns[5],
+                    task: columns[6],
+                    application: columns[7]
                 });
             }
         }
@@ -582,6 +584,8 @@ function populateTasksTable(tasks) {
         row.innerHTML = `
             <td><span class="skill-level ${task.skillLevel.toLowerCase()}">${task.skillLevel}</span></td>
             <td><span class="bloom-level">${task.bloomLevel || 'N/A'}</span></td>
+            <td><span class="main-skill">${task.mainSkill || 'N/A'}</span></td>
+            <td><span class="sub-skill">${task.subSkill || 'N/A'}</span></td>
             <td><strong>${task.heading}</strong></td>
             <td>${task.content}</td>
             <td>${task.task}</td>
@@ -1083,7 +1087,7 @@ LEARNER PROFILE
 
 GLOBAL OUTPUT  ——  STRICT SCHEMA
 * Return exactly {task-count} pipe-separated table rows, no extra text:
-  Skill Level | Bloom Level | Heading | Content | Task | Application
+  Skill Level | Bloom Level | Main Skill | Sub Skill | Heading | Content | Task | Application
 * Skill–Bloom mapping per row:  
     Low → Remembering / Understanding Medium → Applying / Analyzing High → Evaluating / Creating  
 * Word windows (model MUST refuse if any row breaks them):  
@@ -1096,6 +1100,12 @@ SECTION & QUALITY RULES  ——  (numbers match your checklist)
 
 ▶ Bloom Level  
 * Choose ONE Bloom category from the mapping above—no other words.
+
+▶ Main Skill  
+* Output the main skill category (e.g., Communication, Problem-Solving, Leadership, etc.).
+
+▶ Sub Skill  
+* Output a specific sub-skill within the main skill (e.g., "Verbal Communication", "Analytical Thinking", "Team Motivation", etc.).
 
 ▶ Heading (3–7 words)  
 1–4. Balanced tone; hook-style idiom/quote OK; tied to task.
@@ -1357,6 +1367,12 @@ SECTION & QUALITY RULES  ——  (numbers match your checklist)
 
 ▶ Bloom Level  
 * Choose ONE Bloom category from the mapping above—no other words.
+
+▶ Main Skill  
+* Output the main skill category (e.g., Communication, Problem-Solving, Leadership, etc.).
+
+▶ Sub Skill  
+* Output a specific sub-skill within the main skill (e.g., "Verbal Communication", "Analytical Thinking", "Team Motivation", etc.).
 
 ▶ Heading (3–7 words)  
 1–4. Balanced tone; hook-style idiom/quote OK; tied to task.
