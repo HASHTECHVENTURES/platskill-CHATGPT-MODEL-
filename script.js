@@ -467,6 +467,9 @@ async function translateTasks(tasks, targetLanguage) {
             try {
                 const translatedTask = {
                     skillLevel: task.skillLevel, // Keep skill level as is
+                    bloomLevel: task.bloomLevel, // Keep bloom level as is
+                    mainSkill: await translateText(task.mainSkill, targetLanguage),
+                    subSkill: await translateText(task.subSkill, targetLanguage),
                     heading: await translateText(task.heading, targetLanguage),
                     content: await translateText(task.content, targetLanguage),
                     task: await translateText(task.task, targetLanguage),
@@ -1354,7 +1357,7 @@ LEARNER PROFILE
 
 GLOBAL OUTPUT  ——  STRICT SCHEMA
 * Return exactly ${taskCount} pipe-separated table rows, no extra text:
-  Skill Level | Bloom Level | Heading | Content | Task | Application
+  Skill Level | Bloom Level | Main Skill | Sub Skill | Heading | Content | Task | Application
 * Skill–Bloom mapping per row:  
     Low → Remembering / Understanding Medium → Applying / Analyzing High → Evaluating / Creating  
 * Word windows (model MUST refuse if any row breaks them):  
