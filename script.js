@@ -355,6 +355,7 @@ function parseEmployabilityTasks(text, studentData) {
             const columns = line.split('|').map(col => col.trim()).filter(col => col);
             
             if (columns.length >= 8) {
+                // New 8-column format
                 tasks.push({
                     skillLevel: columns[0],
                     bloomLevel: columns[1],
@@ -364,6 +365,19 @@ function parseEmployabilityTasks(text, studentData) {
                     content: columns[5],
                     task: columns[6],
                     application: columns[7]
+                });
+            } else if (columns.length >= 6) {
+                // Old 6-column format - map to new format
+                console.warn('Detected old 6-column format, mapping to new format...');
+                tasks.push({
+                    skillLevel: columns[0],
+                    bloomLevel: columns[1],
+                    mainSkill: 'N/A', // Default value
+                    subSkill: 'N/A', // Default value
+                    heading: columns[2],
+                    content: columns[3],
+                    task: columns[4],
+                    application: columns[5]
                 });
             }
         }
@@ -1146,7 +1160,15 @@ function loadSavedPrompt() {
     const savedPrompt = localStorage.getItem('customPrompt');
     const promptTextarea = document.getElementById('custom-prompt');
     
-    if (savedPrompt && promptTextarea) {
+    // Check if the saved prompt has the old 6-column format
+    if (savedPrompt && savedPrompt.includes('Skill Level | Bloom Level | Heading | Content | Task | Application')) {
+        console.log('Detected old 6-column prompt format, clearing custom prompt...');
+        localStorage.removeItem('customPrompt');
+        if (promptTextarea) {
+            promptTextarea.value = window.defaultPrompt;
+        }
+        showSuccess('Updated to new 8-column format! Please regenerate tasks.');
+    } else if (savedPrompt && promptTextarea) {
         promptTextarea.value = savedPrompt;
     } else if (promptTextarea) {
         promptTextarea.value = window.defaultPrompt;
@@ -1157,7 +1179,9 @@ function resetToDefaultPrompt() {
     const promptTextarea = document.getElementById('custom-prompt');
     if (promptTextarea && window.defaultPrompt) {
         promptTextarea.value = window.defaultPrompt;
-        showSuccess('Prompt reset to default!');
+        // Also clear the saved custom prompt from localStorage
+        localStorage.removeItem('customPrompt');
+        showSuccess('Prompt reset to default and custom prompt cleared!');
     }
 }
 
