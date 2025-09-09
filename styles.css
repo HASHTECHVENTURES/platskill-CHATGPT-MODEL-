@@ -604,10 +604,11 @@ body {
 }
 
 .task-checkbox {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     accent-color: #667eea;
     cursor: pointer;
+    margin-right: 8px;
 }
 
 .selection-controls {
@@ -636,6 +637,18 @@ body {
 
 .tasks-table tr.selected td:first-child {
     background: #e3f2fd;
+}
+
+.tasks-table td:first-child {
+    text-align: center;
+    width: 50px;
+    min-width: 50px;
+}
+
+.tasks-table th:first-child {
+    text-align: center;
+    width: 50px;
+    min-width: 50px;
 }
 
 /* Download Selected Button */

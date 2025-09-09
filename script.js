@@ -631,38 +631,10 @@ function populateTasksTable(tasks) {
 
 
 
-// Download CSV
+// Download Selected CSV (only selected tasks)
 function downloadExcel() {
-    try {
-        const table = document.getElementById('tasksTable');
-        if (!table) {
-            displayError('No tasks table found');
-            return;
-        }
-
-        // Create CSV content from table
-        const rows = Array.from(table.querySelectorAll('tr'));
-        const csvContent = rows.map(row => {
-            const cells = Array.from(row.querySelectorAll('th, td'));
-            return cells.map(cell => `"${cell.textContent.replace(/"/g, '""')}"`).join(',');
-        }).join('\n');
-        
-        // Create and download CSV file
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `Employability_Tasks_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        showSuccess('CSV file downloaded successfully!');
-    } catch (error) {
-        console.error('Error downloading CSV:', error);
-        displayError('Failed to download CSV file');
-    }
+    // This function now redirects to downloadSelectedExcel for consistency
+    downloadSelectedExcel();
 }
 
 // Download Selected CSV
@@ -703,7 +675,7 @@ function downloadSelectedExcel() {
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `Selected_Employability_Tasks_${new Date().toISOString().split('T')[0]}.csv`);
+        link.setAttribute('download', `Employability_Tasks_Selected_${selectedRows.length}_${new Date().toISOString().split('T')[0]}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
