@@ -585,6 +585,71 @@ body {
     border: 1px solid #c8e6c9;
 }
 
+/* Row Selection Styles */
+.select-all-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: #667eea;
+    cursor: pointer;
+}
+
+.select-all-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    margin-left: 8px;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.task-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: #667eea;
+    cursor: pointer;
+}
+
+.selection-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-right: 15px;
+}
+
+.selection-counter {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #667eea;
+    background: #f0f4ff;
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 2px solid #e3f2fd;
+    min-width: 100px;
+    text-align: center;
+}
+
+.tasks-table tr.selected {
+    background: #e3f2fd !important;
+    border-left: 4px solid #667eea;
+}
+
+.tasks-table tr.selected td:first-child {
+    background: #e3f2fd;
+}
+
+/* Download Selected Button */
+#downloadSelectedExcel:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #6c757d;
+}
+
+#downloadSelectedExcel:not(:disabled):hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
 /* Footer */
 .footer {
     text-align: center;
@@ -659,8 +724,8 @@ body {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
 }
 
 .test-results-content {

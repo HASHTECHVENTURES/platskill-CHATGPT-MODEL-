@@ -112,8 +112,11 @@ const DOM = {
     tasksTableBody: null,
     newTasksBtn: null,
     downloadExcelBtn: null,
+    downloadSelectedExcelBtn: null,
     translateTasksBtn: null,
     preferredLanguageSelect: null,
+    selectAllCheckbox: null,
+    selectionCounter: null,
 
 
 
@@ -127,8 +130,11 @@ const DOM = {
         this.tasksTableBody = document.getElementById('tasksTableBody');
         this.newTasksBtn = document.getElementById('newTasks');
         this.downloadExcelBtn = document.getElementById('downloadExcel');
+        this.downloadSelectedExcelBtn = document.getElementById('downloadSelectedExcel');
         this.translateTasksBtn = document.getElementById('translateTasks');
         this.preferredLanguageSelect = document.getElementById('preferred-language');
+        this.selectAllCheckbox = document.getElementById('selectAllTasks');
+        this.selectionCounter = document.getElementById('selectionCounter');
 
 
 
@@ -152,6 +158,7 @@ function initApp() {
     DOM.form?.addEventListener('submit', handleFormSubmit);
     DOM.newTasksBtn?.addEventListener('click', resetForm);
     DOM.downloadExcelBtn?.addEventListener('click', downloadExcel);
+    DOM.downloadSelectedExcelBtn?.addEventListener('click', downloadSelectedExcel);
     DOM.translateTasksBtn?.addEventListener('click', handleTranslateTasks);
 
 
@@ -596,9 +603,12 @@ function cleanTranslationOutput(text, targetLanguage) {
 function populateTasksTable(tasks) {
     DOM.tasksTableBody.innerHTML = '';
     
-    tasks.forEach(task => {
+    tasks.forEach((task, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
+            <td>
+                <input type="checkbox" class="task-checkbox" data-task-index="${index}">
+            </td>
             <td><span class="skill-level ${task.skillLevel.toLowerCase()}">${task.skillLevel}</span></td>
             <td><span class="bloom-level">${task.bloomLevel || 'N/A'}</span></td>
             <td><span class="main-skill">${task.mainSkill || 'N/A'}</span></td>
@@ -610,6 +620,9 @@ function populateTasksTable(tasks) {
         `;
         DOM.tasksTableBody.appendChild(row);
     });
+    
+    // Initialize row selection functionality
+    initializeRowSelection();
 }
 
 
@@ -649,6 +662,144 @@ function downloadExcel() {
     } catch (error) {
         console.error('Error downloading CSV:', error);
         displayError('Failed to download CSV file');
+    }
+}
+
+// Download Selected CSV
+function downloadSelectedExcel() {
+    try {
+        const table = document.getElementById('tasksTable');
+        if (!table) {
+            displayError('No tasks table found');
+            return;
+        }
+
+        // Get selected rows (excluding header)
+        const selectedRows = Array.from(table.querySelectorAll('tbody tr')).filter(row => {
+            const checkbox = row.querySelector('.task-checkbox');
+            return checkbox && checkbox.checked;
+        });
+
+        if (selectedRows.length === 0) {
+            displayError('Please select at least one task to download');
+            return;
+        }
+
+        // Create CSV content with header
+        const headerRow = table.querySelector('thead tr');
+        const headerCells = Array.from(headerRow.querySelectorAll('th'));
+        const headerContent = headerCells.map(cell => `"${cell.textContent.replace(/"/g, '""')}"`).join(',');
+        
+        // Add selected data rows
+        const dataContent = selectedRows.map(row => {
+            const cells = Array.from(row.querySelectorAll('td'));
+            return cells.map(cell => `"${cell.textContent.replace(/"/g, '""')}"`).join(',');
+        }).join('\n');
+        
+        const csvContent = headerContent + '\n' + dataContent;
+        
+        // Create and download CSV file
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `Selected_Employability_Tasks_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showSuccess(`Selected ${selectedRows.length} tasks downloaded successfully!`);
+    } catch (error) {
+        console.error('Error downloading selected CSV:', error);
+        displayError('Failed to download selected CSV file');
+    }
+}
+
+// Initialize row selection functionality
+function initializeRowSelection() {
+    // Add event listeners to individual checkboxes
+    const taskCheckboxes = document.querySelectorAll('.task-checkbox');
+    taskCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', handleTaskSelection);
+    });
+
+    // Add event listener to select all checkbox
+    if (DOM.selectAllCheckbox) {
+        DOM.selectAllCheckbox.addEventListener('change', handleSelectAll);
+    }
+
+    // Update selection counter
+    updateSelectionCounter();
+}
+
+// Handle individual task selection
+function handleTaskSelection(event) {
+    const checkbox = event.target;
+    const row = checkbox.closest('tr');
+    
+    if (checkbox.checked) {
+        row.classList.add('selected');
+    } else {
+        row.classList.remove('selected');
+    }
+    
+    updateSelectionCounter();
+    updateSelectAllState();
+}
+
+// Handle select all checkbox
+function handleSelectAll(event) {
+    const isChecked = event.target.checked;
+    const taskCheckboxes = document.querySelectorAll('.task-checkbox');
+    const rows = document.querySelectorAll('tbody tr');
+    
+    taskCheckboxes.forEach(checkbox => {
+        checkbox.checked = isChecked;
+    });
+    
+    rows.forEach(row => {
+        if (isChecked) {
+            row.classList.add('selected');
+        } else {
+            row.classList.remove('selected');
+        }
+    });
+    
+    updateSelectionCounter();
+}
+
+// Update selection counter
+function updateSelectionCounter() {
+    if (!DOM.selectionCounter) return;
+    
+    const selectedCount = document.querySelectorAll('.task-checkbox:checked').length;
+    const totalCount = document.querySelectorAll('.task-checkbox').length;
+    
+    DOM.selectionCounter.textContent = `${selectedCount} selected`;
+    
+    // Enable/disable download selected button
+    if (DOM.downloadSelectedExcelBtn) {
+        DOM.downloadSelectedExcelBtn.disabled = selectedCount === 0;
+    }
+}
+
+// Update select all checkbox state
+function updateSelectAllState() {
+    if (!DOM.selectAllCheckbox) return;
+    
+    const taskCheckboxes = document.querySelectorAll('.task-checkbox');
+    const checkedCount = document.querySelectorAll('.task-checkbox:checked').length;
+    
+    if (checkedCount === 0) {
+        DOM.selectAllCheckbox.checked = false;
+        DOM.selectAllCheckbox.indeterminate = false;
+    } else if (checkedCount === taskCheckboxes.length) {
+        DOM.selectAllCheckbox.checked = true;
+        DOM.selectAllCheckbox.indeterminate = false;
+    } else {
+        DOM.selectAllCheckbox.checked = false;
+        DOM.selectAllCheckbox.indeterminate = true;
     }
 }
 
