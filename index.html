@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PLAT SKILL - Employability Task Generator</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="api-config-styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
 </head>
@@ -20,6 +21,52 @@
         </header>
 
 
+
+        <!-- API Configuration Section -->
+        <section class="api-config-section">
+            <div class="api-config-header">
+                <h2><i class="fas fa-cog"></i> API Configuration</h2>
+                <p>Configure your OpenAI API settings to generate tasks</p>
+            </div>
+            <div class="api-config-content">
+                <div class="api-config-grid">
+                    <div class="api-config-group">
+                        <label for="api-key">OpenAI API Key *</label>
+                        <input type="password" id="api-key" placeholder="Enter your OpenAI API key" required>
+                        <small>Your API key is stored locally and never shared</small>
+                    </div>
+                    <div class="api-config-group">
+                        <label for="model-select">AI Model</label>
+                        <select id="model-select">
+                            <option value="gpt-5">GPT-5 (Most Advanced)</option>
+                            <option value="gpt-5-mini">GPT-5 Mini (Balanced Performance)</option>
+                            <option value="gpt-5-nano">GPT-5 Nano (Ultra Fast)</option>
+                            <option value="gpt-4o">GPT-4o (Latest)</option>
+                            <option value="gpt-4o-mini">GPT-4o Mini (Fast & Cost-effective)</option>
+                            <option value="gpt-4-turbo">GPT-4 Turbo (High Performance)</option>
+                            <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Balanced)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="api-config-actions">
+                    <button type="button" id="test-api-key" class="btn btn-outline">
+                        <i class="fas fa-flask"></i> Test API Key
+                    </button>
+                    <button type="button" id="save-api-config" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Configuration
+                    </button>
+                    <button type="button" id="reset-api-config" class="btn btn-secondary">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                </div>
+                <div id="api-status" class="api-status hidden">
+                    <div class="status-message">
+                        <i class="fas fa-check-circle"></i>
+                        <span>API configuration saved successfully!</span>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <!-- Main Form -->
         <main class="main-content">
@@ -171,16 +218,6 @@
                 <div class="results-header">
                     <h2><i class="fas fa-tasks"></i> Your Employability Tasks</h2>
                     <div class="results-actions">
-                        <div class="language-controls">
-                            <select id="preferred-language" class="language-select" aria-label="Select language for translation">
-                                <option value="en">English</option>
-                                <option value="hi">Hindi</option>
-                                <option value="mr">Marathi</option>
-                            </select>
-                            <button id="translateTasks" class="btn btn-outline">
-                                <i class="fas fa-language"></i> Translate
-                            </button>
-                        </div>
                         <div class="selection-controls">
                             <span id="selectionCounter" class="selection-counter">0 selected</span>
                             <button id="downloadSelectedExcel" class="btn btn-secondary" disabled>
@@ -227,7 +264,7 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>&copy; 2025 PLAT SKILL Employability Task Generator. Powered by Gemini AI.</p>
+            <p>&copy; 2025 PLAT SKILL Employability Task Generator. Powered by OpenAI GPT Models.</p>
         </footer>
     </div>
 

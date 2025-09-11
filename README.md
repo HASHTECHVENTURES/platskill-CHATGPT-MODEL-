@@ -1,185 +1,235 @@
-# PLAT SKILL - Employability Task Generator
+# 🎓 PLAT SKILL - Employability Task Generator
 
-A modern web-based application that generates personalized, bite-sized employability tasks for students using AI. Built with vanilla JavaScript, HTML5, and CSS3.
+**AI-Powered Task Generation for Career Development**
 
-![PLAT SKILL](https://img.shields.io/badge/PLAT-SKILL-blue?style=for-the-badge&logo=graduation-cap)
-![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow?style=for-the-badge&logo=javascript)
-![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
+A modern web application that generates personalized employability tasks using OpenAI's latest GPT models, including GPT-5, GPT-5 Mini, and GPT-5 Nano.
 
-## 🌟 Features
+## ✨ Features
 
-### **Core Functionality**
-- **Personalized Task Generation**: Creates employability tasks based on student profile
-- **Multi-language Support**: English, Hindi, and Marathi with instant translation
-- **Excel Export**: Download generated tasks as Excel files
-- **Responsive Design**: Works perfectly on desktop, tablet, and mobile devices
+### 🤖 **Advanced AI Models**
+- **GPT-5** (Most Advanced) - Latest and most capable model
+- **GPT-5 Mini** (Balanced Performance) - Optimal balance of speed and capability
+- **GPT-5 Nano** (Ultra Fast) - Lightning-fast responses
+- **GPT-4o** (Latest) - Previous generation leader
+- **GPT-4o Mini** (Fast & Cost-effective) - Budget-friendly option
+- **GPT-4 Turbo** (High Performance) - High-performance variant
+- **GPT-3.5 Turbo** (Balanced) - Reliable baseline model
 
-### **Advanced Customization**
-- **Editable Prompts**: Customize task generation and translation prompts
-- **API Key Management**: Use your own API keys for privacy and control
-- **Real-time Testing**: Test API keys before saving
-- **Persistent Storage**: Settings saved in browser localStorage
+### 🎯 **Smart Task Generation**
+- **Personalized Tasks** based on education level, year, and semester
+- **Skill-Based Focus** with 13+ main skill categories
+- **Bloom's Taxonomy Integration** for proper learning progression
+- **Customizable Task Count** (3, 6, 9, 12, or 15 tasks)
+- **Multiple Skill Levels** (Low, Medium, High, All Levels)
+
+### 🔧 **User-Friendly Interface**
+- **Clean, Modern Design** with responsive layout
+- **API Configuration Panel** prominently displayed
+- **Real-time API Testing** with instant feedback
+- **Model Selection Dropdown** with detailed descriptions
+- **Secure API Key Storage** (local storage only)
+- **No Technical Parameters** - simplified for ease of use
+
+### 📊 **Export & Management**
+- **CSV Export** for selected tasks
+- **Task Selection** with bulk operations
+- **Custom Prompt Editor** for advanced users
+- **Prompt Testing** with live results
+- **Settings Persistence** across sessions
 
 ## 🚀 Quick Start
 
-### **Option 1: Direct File Opening**
-1. **Download/Clone** this repository
-2. **Open** `index.html` in your web browser
-3. **Start using** the application immediately
-
-### **Option 2: Local Server (Recommended)**
+### 1. **Clone the Repository**
 ```bash
-# Navigate to project directory
-cd plat-skill-task-generator
-
-# Using Python 3
-python -m http.server 8000
-
-# Using Python 2
-python -m SimpleHTTPServer 8000
-
-# Using Node.js
-npx http-server
+git clone https://github.com/HASHTECHVENTURES/platskill-CHATGPT-MODEL-.git
+cd platskill-CHATGPT-MODEL-
 ```
 
-Then open: `http://localhost:8000`
+### 2. **Set Up API Key**
+1. Get your OpenAI API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+2. Open `index.html` in your browser
+3. Enter your API key in the "API Configuration" section
+4. Select your preferred model (GPT-5 recommended)
+5. Click "Test API Key" to verify
 
-## 📋 Form Fields
+### 3. **Generate Tasks**
+1. Fill out the student profile form
+2. Select your main skill focus
+3. Choose skill level and task count
+4. Click "Generate Employability Tasks"
+5. Export selected tasks as CSV
 
-### **Student Profile**
-- **Education Level**: High School, Diploma, Bachelor's, Master's, PhD
-- **Education Year**: 1st Year to Final Year
-- **Semester**: 1st to 8th Semester
+## 🛠️ Technical Details
 
-### **Program & Skills**
-- **Program/Field**: Computer Science, Engineering, Business, Psychology, Marketing, Finance, Healthcare, Design, Education, Other
-- **Main Skill Focus**: Communication, Problem-Solving, Leadership, Collaboration, Emotional Intelligence, Learning Agility, Creativity and Innovation, Growth Mindset, Multifaceted Literacy Skills, Productivity, Decision-Making, Entrepreneurship
+### **Architecture**
+- **Frontend**: Pure HTML5, CSS3, JavaScript (ES6+)
+- **AI Integration**: OpenAI Chat Completions API
+- **Storage**: Local Storage for settings and API keys
+- **Styling**: Custom CSS with Font Awesome icons
+- **Responsive**: Mobile-first design approach
 
-### **Task Preferences**
-- **Skill Level**: Low (Beginner), Medium (Intermediate), High (Advanced), All Levels
-- **Number of Tasks**: 3, 6, 9, or 12 tasks
+### **API Integration**
+- **Endpoint**: `https://api.openai.com/v1/chat/completions`
+- **Authentication**: Bearer token (API key)
+- **Models**: All GPT-3.5, GPT-4, and GPT-5 variants
+- **Rate Limits**: Handled gracefully with user feedback
 
-## 🌐 Supported Languages
+### **Security Features**
+- **No Hardcoded Keys**: All API keys stored locally
+- **Input Validation**: Comprehensive form validation
+- **Error Handling**: User-friendly error messages
+- **Secure Storage**: API keys never transmitted except to OpenAI
 
-| Language | Code | Script |
-|----------|------|--------|
-| English | en | Latin |
-| Hindi | hi | Devanagari |
-| Marathi | mr | Devanagari |
+## 📁 Project Structure
 
-## ⚙️ Configuration
+```
+platskill-CHATGPT-MODEL-/
+├── index.html              # Main application interface
+├── script.js               # Core application logic
+├── styles.css              # Main styling
+├── api-config-styles.css   # API configuration styling
+├── test-project-api.html   # API testing page
+├── package.json            # Project metadata
+├── README.md               # This file
+├── LICENSE                 # MIT License
+└── .gitignore             # Git ignore rules
+```
 
-### **API Keys Setup**
-1. Click **"Show & Edit Prompts"** button
-2. Navigate to **"API Keys Management"** section
-3. Enter your API keys:
-   - **OpenRouter API Key** (Primary): Get from [OpenRouter](https://openrouter.ai/keys)
-   - **Gemini API Key 1** (Fallback): Get from [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - **Gemini API Key 2** (Optional): Backup key for reliability
-4. Click **"Test"** to verify each key
-5. Click **"Save API Keys"** to persist settings
+## 🎨 Customization
+
+### **Adding New Models**
+1. Update `AVAILABLE_MODELS` in `script.js`
+2. Add option to HTML dropdown
+3. Test with your API key
 
 ### **Custom Prompts**
-1. Click **"Show & Edit Prompts"** button
-2. Edit task generation or translation prompts
-3. Use placeholders like `{taskCount}`, `{name}`, `{program}`, etc.
-4. Click **"Save"** to apply changes
+1. Use the "Customize System Prompt" section
+2. Include placeholders: `{{education-level}}`, `{{main-skill}}`, etc.
+3. Test your prompt before generating tasks
 
-## 🔧 Technical Details
+### **Styling**
+- Modify `styles.css` for main styling
+- Update `api-config-styles.css` for API section
+- All styles are modular and well-commented
 
-### **AI Models Used**
-- **Primary**: OpenRouter (Gemini 2.5 Pro)
-- **Fallback**: Google Gemini API (Gemini 2.0 Flash)
+## 🔧 Configuration
 
-### **API Configuration**
-- **Temperature**: 0.7 (Task Generation), 0.3 (Translation)
-- **Max Tokens**: 2048 (Tasks), 200 (Translation)
-- **Top P**: 0.95 (Tasks), 0.8 (Translation)
-
-### **Browser Storage**
-- **localStorage Keys**:
-  - `customTaskPrompt`: Custom task generation prompt
-  - `customTranslationPrompt`: Custom translation prompt
-  - `openRouterApiKey`: OpenRouter API key
-  - `geminiApiKey1`: Primary Gemini API key
-  - `geminiApiKey2`: Secondary Gemini API key
-
-## 📁 File Structure
-
+### **Available Models**
+```javascript
+AVAILABLE_MODELS: {
+    'gpt-5': 'GPT-5 (Most Advanced)',
+    'gpt-5-mini': 'GPT-5 Mini (Balanced Performance)',
+    'gpt-5-nano': 'GPT-5 Nano (Ultra Fast)',
+    'gpt-4o': 'GPT-4o (Latest)',
+    'gpt-4o-mini': 'GPT-4o Mini (Fast & Cost-effective)',
+    'gpt-4-turbo': 'GPT-4 Turbo (High Performance)',
+    'gpt-3.5-turbo': 'GPT-3.5 Turbo (Balanced)'
+}
 ```
-plat-skill-task-generator/
-├── index.html          # Main application interface
-├── styles.css          # Styling and responsive design
-├── script.js           # Core functionality and AI integration
-├── README.md           # This documentation
-└── .gitignore          # Git ignore rules
-```
+
+### **Default Settings**
+- **Default Model**: GPT-5
+- **Default Task Count**: 15
+- **API Timeout**: Handled by browser
+- **Storage**: Local Storage only
+
+## 📋 Skill Categories
+
+The application supports 13+ main skill categories:
+
+1. **Communication** - Verbal and written communication skills
+2. **Problem-Solving** - Analytical and critical thinking
+3. **Foundational Cognitive Abilities** - Core mental capabilities
+4. **Collaboration** - Teamwork and interpersonal skills
+5. **Emotional Intelligence** - Self-awareness and empathy
+6. **Leadership** - Management and influence skills
+7. **Learning Agility** - Adaptability and continuous learning
+8. **Creativity and Innovation** - Creative thinking and innovation
+9. **Growth Mindset** - Positive attitude toward learning
+10. **Multifaceted Literacy Skills** - Digital, financial, media literacy
+11. **Productivity** - Efficiency and time management
+12. **Decision-Making** - Strategic and tactical decisions
+13. **Entrepreneurship** - Business creation and management
 
 ## 🎯 Use Cases
 
-- **Educational Institutions**: Generate employability tasks for students
-- **Career Counselors**: Create personalized skill development activities
-- **Students**: Self-assessment and skill improvement
-- **HR Professionals**: Employee development and training
+### **Educational Institutions**
+- Generate tasks for different academic levels
+- Create skill-based learning paths
+- Support career development programs
+
+### **Corporate Training**
+- Employee skill development
+- Leadership training programs
+- Team building exercises
+
+### **Personal Development**
+- Individual skill assessment
+- Career planning and development
+- Learning goal setting
 
 ## 🔒 Privacy & Security
 
-- **Client-side Processing**: All data processed in your browser
-- **No Server Required**: Works completely offline after initial load
-- **API Key Privacy**: Your API keys stored locally only
-- **No Data Collection**: No student data sent to external servers
-
-## 🛠️ Customization
-
-### **Adding New Skills**
-Edit the `skillMapping` object in `script.js` to add new skill categories.
-
-### **Adding New Languages**
-1. Add language code to `SUPPORTED_LANGUAGES` in `script.js`
-2. Add language option to the select dropdown in `index.html`
-3. Update translation prompt template if needed
-
-### **Modifying Task Format**
-Edit the task generation prompt template to change output format and requirements.
-
-## 📞 Support
-
-For issues or questions:
-1. Check browser console for error messages (F12 → Console)
-2. Verify API keys are valid and have sufficient credits
-3. Ensure all required form fields are filled
-4. Try refreshing the page if issues persist
+- **No Data Collection**: No personal data is stored or transmitted
+- **Local Storage Only**: All settings stored locally in browser
+- **API Key Security**: Keys only sent to OpenAI for API calls
+- **No Tracking**: No analytics or user tracking
+- **Open Source**: Full source code available for review
 
 ## 🤝 Contributing
 
+We welcome contributions! Please:
+
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🔄 Updates
+## 🆘 Support
 
-- **v1.0**: Initial release with basic task generation
-- **v1.1**: Added multi-language support
-- **v1.2**: Added prompt customization
-- **v1.3**: Added API key management
-- **v1.4**: Enhanced UI and error handling
+### **Common Issues**
 
-## 🙏 Acknowledgments
+**API Key Not Working**
+- Verify your OpenAI API key is valid
+- Check your OpenAI account has sufficient credits
+- Ensure you have access to the selected model
 
-- **Google Gemini AI** for providing the AI capabilities
-- **OpenRouter** for API access to multiple AI models
+**Tasks Not Generating**
+- Test your API key first
+- Check browser console for errors
+- Verify all required fields are filled
+
+**Model Not Available**
+- Some models may require special access
+- Try GPT-3.5 Turbo as a fallback
+- Check OpenAI's model availability
+
+### **Getting Help**
+- Check the browser console for error messages
+- Test your API key using the built-in tester
+- Review the OpenAI API documentation
+
+## 🏆 Acknowledgments
+
+- **OpenAI** for providing the GPT models
 - **Font Awesome** for the beautiful icons
-- **SheetJS** for Excel export functionality
+- **HASHTECHVENTURES** for project development
+
+## 📈 Roadmap
+
+- [ ] **Multi-language Support** - Generate tasks in different languages
+- [ ] **Advanced Analytics** - Task completion tracking
+- [ ] **Team Collaboration** - Share tasks with teams
+- [ ] **Mobile App** - Native mobile application
+- [ ] **API Integration** - REST API for external integrations
 
 ---
 
-**PLAT SKILL** - Empowering students with bite-sized employability skills for career success! 🚀
+**Made with ❤️ by HASHTECHVENTURES**
 
-Made with ❤️ for the education community.
+*Empowering career development through AI-driven task generation*

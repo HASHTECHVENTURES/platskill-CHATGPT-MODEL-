@@ -1,108 +1,44 @@
 // PLAT SKILL Employability Task Generator
 // Configuration
 const CONFIG = {
-    // Gemini API Keys (fallback) - will be loaded from localStorage
-    GEMINI_API_KEYS: [
-        'AIzaSyAh_H6EwL3KOgJ8m086W3OBlCqPo7Khewk',  // Primary key
-        'AIzaSyC0rDffMvwYnTVpAsUI2iMY-N5CqU7lvmU',  // Secondary key
-    ],
-    GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+    // OpenAI API Configuration
+    API_KEY: '',  // Will be loaded from localStorage
+    API_URL: 'https://api.openai.com/v1/chat/completions',
     
-    // OpenRouter API (Primary) - will be loaded from localStorage
-    OPENROUTER_API_KEY: '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',
-    OPENROUTER_API_URL: 'https://openrouter.ai/api/v1/chat/completions',
-    OPENROUTER_MODEL: 'google/gemini-2.5-pro',
-    
-    // OpenAI API - will be loaded from localStorage
-    OPENAI_API_KEY: '',
-    OPENAI_API_URL: 'https://api.openai.com/v1/chat/completions',
-    
-    // Anthropic API - will be loaded from localStorage
-    ANTHROPIC_API_KEY: '',
-    ANTHROPIC_API_URL: 'https://api.anthropic.com/v1/messages',
-    
-    // Custom API - will be loaded from localStorage
-    CUSTOM_API_ENDPOINT: '',
-    CUSTOM_API_KEY: '',
-    
-    // Model configurations
-    MODELS: {
-        // Gemini Models
-        'gemini-2.0-flash': { provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent' },
-        'gemini-1.5-pro': { provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent' },
-        'gemini-1.5-flash': { provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent' },
-        
-        // OpenAI Models
-        'gpt-4o': { provider: 'openai', url: 'https://api.openai.com/v1/chat/completions' },
-        'gpt-4o-mini': { provider: 'openai', url: 'https://api.openai.com/v1/chat/completions' },
-        
-        // Anthropic Models
-        'claude-3-5-sonnet': { provider: 'anthropic', url: 'https://api.anthropic.com/v1/messages' },
-        'claude-3-haiku': { provider: 'anthropic', url: 'https://api.anthropic.com/v1/messages' },
-        
-        // OpenRouter Models
-        'llama-3.2-3b': { provider: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions' },
-        'llama-3.2-8b': { provider: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions' },
-        'llama-3.2-70b': { provider: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions' },
-        'mixtral-8x7b': { provider: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions' },
-        'codellama-34b': { provider: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions' }
+    // Available OpenAI Models
+    AVAILABLE_MODELS: {
+        'gpt-5': 'GPT-5 (Most Advanced)',
+        'gpt-5-mini': 'GPT-5 Mini (Balanced Performance)',
+        'gpt-5-nano': 'GPT-5 Nano (Ultra Fast)',
+        'gpt-4o': 'GPT-4o (Latest)',
+        'gpt-4o-mini': 'GPT-4o Mini (Fast & Cost-effective)',
+        'gpt-4-turbo': 'GPT-4 Turbo (High Performance)',
+        'gpt-3.5-turbo': 'GPT-3.5 Turbo (Balanced)'
     },
     
-    REQUIRED_FIELDS: ['education-level', 'education-year', 'semester', 'main-skill', 'skill-level', 'task-count'],
-    SUPPORTED_LANGUAGES: {
-        'en': 'English',
-        'hi': 'Hindi',
-        'mr': 'Marathi',
-        'bn': 'Bengali',
-        'te': 'Telugu',
-        'ta': 'Tamil',
-        'ml': 'Malayalam',
-        'kn': 'Kannada',
-        'gu': 'Gujarati',
-        'pa': 'Punjabi',
-        'or': 'Odia'
-    }
-
+    // Default model
+    DEFAULT_MODEL: 'gpt-5',
+    
+    REQUIRED_FIELDS: ['education-level', 'education-year', 'semester', 'main-skill', 'skill-level', 'task-count']
 };
 
-// Load saved API keys on startup
+// Load saved API key and model on startup
 function loadConfigFromStorage() {
-    const savedOpenRouterKey = localStorage.getItem('openRouterApiKey');
-    const savedGeminiKey1 = localStorage.getItem('geminiApiKey1');
-    const savedGeminiKey2 = localStorage.getItem('geminiApiKey2');
-    const savedOpenAIKey = localStorage.getItem('openaiApiKey');
-    const savedAnthropicKey = localStorage.getItem('anthropicApiKey');
-    const savedCustomEndpoint = localStorage.getItem('customApiEndpoint');
-    const savedCustomKey = localStorage.getItem('customApiKey');
+    const savedApiKey = localStorage.getItem('apiKey');
+    const savedModel = localStorage.getItem('selectedModel');
     
-    if (savedOpenRouterKey) {
-        CONFIG.OPENROUTER_API_KEY = savedOpenRouterKey;
+    if (savedApiKey) {
+        CONFIG.API_KEY = savedApiKey;
     }
-    if (savedGeminiKey1) {
-        CONFIG.GEMINI_API_KEYS[0] = savedGeminiKey1;
-    }
-    if (savedGeminiKey2) {
-        CONFIG.GEMINI_API_KEYS[1] = savedGeminiKey2;
-    }
-    if (savedOpenAIKey) {
-        CONFIG.OPENAI_API_KEY = savedOpenAIKey;
-    }
-    if (savedAnthropicKey) {
-        CONFIG.ANTHROPIC_API_KEY = savedAnthropicKey;
-    }
-    if (savedCustomEndpoint) {
-        CONFIG.CUSTOM_API_ENDPOINT = savedCustomEndpoint;
-    }
-    if (savedCustomKey) {
-        CONFIG.CUSTOM_API_KEY = savedCustomKey;
+    
+    if (savedModel && CONFIG.AVAILABLE_MODELS[savedModel]) {
+        CONFIG.DEFAULT_MODEL = savedModel;
     }
 }
 
 
 
 
-// Translation cache for instant switching
-const translationCache = new Map();
 
 // DOM Elements
 const DOM = {
@@ -113,10 +49,16 @@ const DOM = {
     newTasksBtn: null,
     downloadExcelBtn: null,
     downloadSelectedExcelBtn: null,
-    translateTasksBtn: null,
-    preferredLanguageSelect: null,
     selectAllCheckbox: null,
     selectionCounter: null,
+    
+    // API Configuration elements
+    apiKeyInput: null,
+    modelSelect: null,
+    testApiKeyBtn: null,
+    saveApiConfigBtn: null,
+    resetApiConfigBtn: null,
+    apiStatus: null,
 
 
 
@@ -131,10 +73,16 @@ const DOM = {
         this.newTasksBtn = document.getElementById('newTasks');
         this.downloadExcelBtn = document.getElementById('downloadExcel');
         this.downloadSelectedExcelBtn = document.getElementById('downloadSelectedExcel');
-        this.translateTasksBtn = document.getElementById('translateTasks');
-        this.preferredLanguageSelect = document.getElementById('preferred-language');
         this.selectAllCheckbox = document.getElementById('selectAllTasks');
         this.selectionCounter = document.getElementById('selectionCounter');
+        
+        // API Configuration elements
+        this.apiKeyInput = document.getElementById('api-key');
+        this.modelSelect = document.getElementById('model-select');
+        this.testApiKeyBtn = document.getElementById('test-api-key');
+        this.saveApiConfigBtn = document.getElementById('save-api-config');
+        this.resetApiConfigBtn = document.getElementById('reset-api-config');
+        this.apiStatus = document.getElementById('api-status');
 
 
 
@@ -159,15 +107,42 @@ function initApp() {
     DOM.newTasksBtn?.addEventListener('click', resetForm);
     DOM.downloadExcelBtn?.addEventListener('click', downloadExcel);
     DOM.downloadSelectedExcelBtn?.addEventListener('click', downloadSelectedExcel);
-    DOM.translateTasksBtn?.addEventListener('click', handleTranslateTasks);
+    
+    // API Configuration event listeners
+    DOM.testApiKeyBtn?.addEventListener('click', testApiKey);
+    DOM.saveApiConfigBtn?.addEventListener('click', saveApiKeys);
+    DOM.resetApiConfigBtn?.addEventListener('click', resetApiKeys);
 
 
     // Initialize API keys
     loadSavedApiKeys();
     
+    // Initialize model selection
+    initializeModelSelection();
+    
     // Initialize prompt editor
     initializePromptEditor();
 
+}
+
+// Initialize model selection dropdown
+function initializeModelSelection() {
+    const modelSelect = document.getElementById('model-select');
+    if (!modelSelect) return;
+    
+    // Clear existing options
+    modelSelect.innerHTML = '';
+    
+    // Add options for each available model
+    Object.entries(CONFIG.AVAILABLE_MODELS).forEach(([modelId, modelName]) => {
+        const option = document.createElement('option');
+        option.value = modelId;
+        option.textContent = modelName;
+        if (modelId === CONFIG.DEFAULT_MODEL) {
+            option.selected = true;
+        }
+        modelSelect.appendChild(option);
+    });
 }
 
 // Form submission handler
@@ -202,130 +177,54 @@ function validateForm(data) {
     return true;
 }
 
-// Smart API call with OpenRouter primary and Gemini fallback
-async function makeGeminiAPICall(prompt, config = {}) {
-    const defaultConfig = {
-        maxOutputTokens: 2048,
-        temperature: 0.7,
-        topP: 0.8
-    };
+// OpenAI API call function
+async function makeAPICall(prompt, config = {}) {
+    const defaultConfig = {};
     
     const finalConfig = { ...defaultConfig, ...config };
+    const selectedModel = config.model || CONFIG.DEFAULT_MODEL;
     
-    // Try OpenRouter first (Primary)
+    if (!CONFIG.API_KEY) {
+        throw new Error('API key not found. Please add your OpenAI API key in settings.');
+    }
+    
     try {
-        console.log('Attempting API call with OpenRouter (Gemini 2.5 Pro)...');
+        console.log(`Making API call with OpenAI ${selectedModel}...`);
         
-        const response = await fetch(CONFIG.OPENROUTER_API_URL, {
+        const response = await fetch(CONFIG.API_URL, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${CONFIG.OPENROUTER_API_KEY}`,
+                'Authorization': `Bearer ${CONFIG.API_KEY}`,
                 'Content-Type': 'application/json',
-                'HTTP-Referer': window.location.origin,
-                'X-Title': 'PLAT SKILL Task Generator'
             },
             body: JSON.stringify({
-                model: CONFIG.OPENROUTER_MODEL,
+                model: selectedModel,
                 messages: [
                     {
                         role: 'user',
                         content: prompt
                     }
-                ],
-                max_tokens: finalConfig.maxOutputTokens,
-                temperature: finalConfig.temperature,
-                top_p: finalConfig.topP
+                ]
             })
         });
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            console.warn(`OpenRouter API call failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
-            
-            // Check for specific OpenRouter errors
-            if (response.status === 402) {
-                console.warn('OpenRouter insufficient credits, falling back to Gemini...');
-            } else if (response.status === 429) {
-                console.warn('OpenRouter rate limited, falling back to Gemini...');
-            }
-            
-            throw new Error(`OpenRouter failed: ${response.status}`);
+            throw new Error(`API call failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
         }
 
         const data = await response.json();
         
         if (!data.choices?.[0]?.message?.content) {
-            console.warn('Invalid response from OpenRouter');
-            throw new Error('Invalid response from OpenRouter');
+            throw new Error('Invalid response from API');
         }
 
-        console.log('API call successful with OpenRouter (Gemini 2.5 Pro)');
+        console.log('API call successful');
         return data.choices[0].message.content.trim();
         
     } catch (error) {
-        console.warn('OpenRouter failed, trying Gemini fallback...', error.message);
-        
-        // Fallback to Gemini API keys
-        for (let i = 0; i < CONFIG.GEMINI_API_KEYS.length; i++) {
-            const apiKey = CONFIG.GEMINI_API_KEYS[i];
-            const isPrimary = i === 0;
-            
-            try {
-                console.log(`Attempting Gemini API call with ${isPrimary ? 'primary' : 'secondary'} key...`);
-                
-                const response = await fetch(`${CONFIG.GEMINI_API_URL}?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: finalConfig
-                    })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    console.warn(`Gemini API call failed with ${isPrimary ? 'primary' : 'secondary'} key: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
-                    
-                    // Check if it's a rate limit error
-                    if (response.status === 429) {
-                        const retryDelay = errorData.error?.details?.[0]?.['@type'] === 'type.googleapis.com/google.rpc.RetryInfo' 
-                            ? parseInt(errorData.error.details[0].retryDelay) * 1000 
-                            : 60000; // Default 60 seconds
-                        
-                        console.log(`Rate limited. Waiting ${retryDelay/1000} seconds before trying next key...`);
-                        await new Promise(resolve => setTimeout(resolve, retryDelay));
-                    }
-                    
-                    if (i === CONFIG.GEMINI_API_KEYS.length - 1) {
-                        throw new Error(`All API keys failed. Last error: ${response.status}`);
-                    }
-                    continue; // Try next key
-                }
-
-                const data = await response.json();
-                
-                if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    console.warn(`Invalid response from ${isPrimary ? 'primary' : 'secondary'} key`);
-                    if (i === CONFIG.GEMINI_API_KEYS.length - 1) {
-                        throw new Error('Invalid response from all API keys');
-                    }
-                    continue; // Try next key
-                }
-
-                console.log(`API call successful with ${isPrimary ? 'primary' : 'secondary'} Gemini key`);
-                return data.candidates[0].content.parts[0].text.trim();
-                
-            } catch (error) {
-                console.warn(`Error with ${isPrimary ? 'primary' : 'secondary'} Gemini key:`, error.message);
-                
-                if (i === CONFIG.GEMINI_API_KEYS.length - 1) {
-                    throw error; // Re-throw if all keys failed
-                }
-                // Continue to next key
-            }
-        }
+        console.error('API call failed:', error);
+        throw error;
     }
 }
 
@@ -336,16 +235,14 @@ async function generateEmployabilityTasks(studentData) {
     try {
         const prompt = createEmployabilityPrompt(studentData);
         
-        const generatedText = await makeGeminiAPICall(prompt, {
-            maxOutputTokens: 2048,
-            temperature: 0.7,
-            topP: 0.95
+        const generatedText = await makeAPICall(prompt, {
+            model: CONFIG.DEFAULT_MODEL
         });
         
         return parseEmployabilityTasks(generatedText, studentData);
         
     } catch (error) {
-        console.error('Error calling Gemini API:', error);
+        console.error('Error calling API:', error);
         throw new Error(`Task generation failed: ${error.message}`);
     }
 }
@@ -405,199 +302,13 @@ async function displayResults(data) {
         return;
     }
     
-    // Store original tasks
-    window.originalTasks = data.tasks;
-    
-    // Check if translation is needed
-    const selectedLanguage = DOM.preferredLanguageSelect?.value || 'en';
-    
-    if (selectedLanguage === 'en') {
-        // Show in English
+    // Show tasks in English
         populateTasksTable(data.tasks);
-    } else {
-        // Translate to selected language
-        try {
-            const translatedTasks = await translateTasks(data.tasks, selectedLanguage);
-            populateTasksTable(translatedTasks);
-        } catch (error) {
-            console.error('Translation failed:', error);
-            // Fallback to English
-            populateTasksTable(data.tasks);
-        }
-    }
     
     DOM.resultsDiv.classList.remove('hidden');
     DOM.resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// Handle translation button click
-async function handleTranslateTasks() {
-    if (!window.originalTasks) {
-        displayError('No tasks available for translation.');
-        return;
-    }
-    
-    const selectedLanguage = DOM.preferredLanguageSelect.value;
-    
-    if (selectedLanguage === 'en') {
-        // Instant switch back to original English tasks
-        populateTasksTable(window.originalTasks);
-        return;
-    }
-    
-    try {
-        // Show loading state for translation
-        DOM.translateTasksBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Translating...';
-        DOM.translateTasksBtn.disabled = true;
-        
-        console.log('Translating tasks to:', selectedLanguage);
-        const translatedTasks = await translateTasks(window.originalTasks, selectedLanguage);
-        console.log('Translation completed');
-        
-        // Populate table with translated tasks
-        populateTasksTable(translatedTasks);
-        
-        // Show success message
-        showSuccess(`Successfully translated ${translatedTasks.length} tasks to ${CONFIG.SUPPORTED_LANGUAGES[selectedLanguage]}!`);
-        
-    } catch (error) {
-        console.error('Translation failed:', error);
-        displayError('Translation failed. Please try again.');
-    } finally {
-        // Reset button state
-        DOM.translateTasksBtn.innerHTML = '<i class="fas fa-language"></i> Translate';
-        DOM.translateTasksBtn.disabled = false;
-    }
-}
-
-// Translate tasks
-async function translateTasks(tasks, targetLanguage) {
-    try {
-        if (targetLanguage === 'en') {
-            return tasks;
-        }
-
-        console.log(`Starting translation of ${tasks.length} tasks to ${targetLanguage}`);
-        
-        const translatedTasks = [];
-        
-        for (let i = 0; i < tasks.length; i++) {
-            const task = tasks[i];
-            console.log(`Translating task ${i + 1}: ${task.heading.substring(0, 30)}...`);
-            
-            try {
-                const translatedTask = {
-                    skillLevel: task.skillLevel, // Keep skill level as is
-                    bloomLevel: task.bloomLevel, // Keep bloom level as is
-                    mainSkill: await translateText(task.mainSkill, targetLanguage),
-                    subSkill: await translateText(task.subSkill, targetLanguage),
-                    heading: await translateText(task.heading, targetLanguage),
-                    content: await translateText(task.content, targetLanguage),
-                    task: await translateText(task.task, targetLanguage),
-                    application: await translateText(task.application, targetLanguage)
-                };
-                
-                translatedTasks.push(translatedTask);
-                
-                // Small delay between API calls
-                await new Promise(resolve => setTimeout(resolve, 300));
-                
-            } catch (taskError) {
-                console.error(`Error translating task: ${task.heading}`, taskError);
-                // If translation fails for a task, keep the original
-                translatedTasks.push(task);
-            }
-        }
-        
-        console.log(`Successfully translated ${translatedTasks.length} tasks to ${targetLanguage}`);
-        return translatedTasks;
-    } catch (error) {
-        console.error('Error translating tasks:', error);
-        return tasks;
-    }
-}
-
-// Translate text using Gemini API with caching
-async function translateText(text, targetLanguage) {
-    try {
-        if (targetLanguage === 'en') {
-            return text;
-        }
-
-        // Check cache first for instant switching
-        const cacheKey = `${text}_${targetLanguage}`;
-        if (translationCache.has(cacheKey)) {
-            console.log(`Cache hit for: ${cacheKey}`);
-            return translationCache.get(cacheKey);
-        }
-
-        const languageNames = {
-            'hi': 'Hindi',
-            'mr': 'Marathi'
-        };
-
-        const targetLanguageName = languageNames[targetLanguage];
-        
-        // Create translation prompt
-        const translationPrompt = `Translate this text to ${targetLanguageName}: "${text}"
-
-CRITICAL RULES:
-- Translate EVERYTHING to ${targetLanguageName} - no English words allowed
-- Use native script only
-- Translate ALL parts including names to appropriate ${targetLanguageName} equivalent
-- No explanations, quotes, or extra text
-- Keep same meaning and tone
-- No repetition of words
-- If it's a task instruction, translate the entire instruction
-- If it's an application/benefit text, translate completely
-- DO NOT CUT or truncate the translation - translate the complete text
-- Ensure the full meaning is preserved
-
-Output only the pure ${targetLanguageName} translation.`;
-
-        let translatedText = await makeGeminiAPICall(translationPrompt, {
-            maxOutputTokens: 300,
-            temperature: 0.2,
-            topP: 0.9
-        });
-        
-        // Clean up translation output
-        translatedText = cleanTranslationOutput(translatedText, targetLanguageName);
-        
-        // If translation is empty or same as original, return original
-        if (!translatedText || translatedText === text) {
-            console.log(`Translation failed or empty for: "${text}"`);
-            return text;
-        }
-        
-        console.log(`Translated: "${text}" -> "${translatedText}" (${targetLanguageName})`);
-        
-        // Cache the translation for instant switching
-        translationCache.set(cacheKey, translatedText);
-        
-        return translatedText;
-    } catch (error) {
-        console.error('Translation error:', error);
-        return text; // Return original text if translation fails
-    }
-}
-
-// Clean up translation output
-function cleanTranslationOutput(text, targetLanguage) {
-    // Remove quotes and extra text
-    text = text.replace(/^["""']|["""']$/g, '');
-    text = text.split('\n')[0].trim();
-    
-    // Remove explanations (anything after ** or * or -)
-    text = text.replace(/\*\*.*?\*\*/g, '');
-    text = text.replace(/\*.*?\*/g, '');
-    text = text.replace(/-.*$/g, '');
-    
-    // Remove any remaining quotes that might be inside the text
-    text = text.replace(/^["""']|["""']$/g, '');
-    
-    return text.trim();
-}
 
 // Populate tasks table
 function populateTasksTable(tasks) {
@@ -786,9 +497,6 @@ function resetForm() {
     DOM.form.reset();
     DOM.resultsDiv.classList.add('hidden');
     DOM.form.style.display = 'block';
-    // Clear stored tasks and cache
-    window.originalTasks = null;
-    translationCache.clear();
 }
 
 // Show loading
@@ -842,6 +550,23 @@ function showSuccess(message) {
     }, 3000);
 }
 
+function showApiStatus(message, type = 'success') {
+    if (!DOM.apiStatus) return;
+    
+    const statusMessage = DOM.apiStatus.querySelector('.status-message');
+    if (statusMessage) {
+        const icon = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+        statusMessage.innerHTML = `<i class="${icon}"></i><span>${message}</span>`;
+        DOM.apiStatus.className = `api-status ${type}`;
+        DOM.apiStatus.classList.remove('hidden');
+        
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            DOM.apiStatus.classList.add('hidden');
+        }, 3000);
+    }
+}
+
 // Get user-friendly error message
 function getErrorMessage(error) {
     if (error.message.includes('timeout')) return 'Request timed out. Please try again.';
@@ -859,142 +584,67 @@ function getErrorMessage(error) {
 
 // API Key Management Functions
 function loadSavedApiKeys() {
-    const savedOpenRouterKey = localStorage.getItem('openRouterApiKey');
-    const savedGeminiKey1 = localStorage.getItem('geminiApiKey1');
-    const savedGeminiKey2 = localStorage.getItem('geminiApiKey2');
-    const savedOpenAIKey = localStorage.getItem('openaiApiKey');
-    const savedAnthropicKey = localStorage.getItem('anthropicApiKey');
-    const savedCustomEndpoint = localStorage.getItem('customApiEndpoint');
-    const savedCustomKey = localStorage.getItem('customApiKey');
+    const savedApiKey = localStorage.getItem('apiKey');
+    const savedModel = localStorage.getItem('selectedModel');
 
-    if (savedOpenRouterKey) {
-        document.getElementById('openrouterApiKey').value = savedOpenRouterKey;
+    if (savedApiKey && DOM.apiKeyInput) {
+        DOM.apiKeyInput.value = savedApiKey;
     }
-    if (savedGeminiKey1) {
-        document.getElementById('geminiApiKey1').value = savedGeminiKey1;
-    }
-    if (savedGeminiKey2) {
-        document.getElementById('geminiApiKey2').value = savedGeminiKey2;
-    }
-    if (savedOpenAIKey) {
-        document.getElementById('openaiApiKey').value = savedOpenAIKey;
-    }
-    if (savedAnthropicKey) {
-        document.getElementById('anthropicApiKey').value = savedAnthropicKey;
-    }
-    if (savedCustomEndpoint) {
-        document.getElementById('customApiEndpoint').value = savedCustomEndpoint;
-    }
-    if (savedCustomKey) {
-        document.getElementById('customApiKey').value = savedCustomKey;
+    
+    if (savedModel && DOM.modelSelect) {
+        DOM.modelSelect.value = savedModel;
     }
 }
 
 function saveApiKeys() {
-    const openRouterKey = document.getElementById('openrouterApiKey').value.trim();
-    const geminiKey1 = document.getElementById('geminiApiKey1').value.trim();
-    const geminiKey2 = document.getElementById('geminiApiKey2').value.trim();
-    const openAIKey = document.getElementById('openaiApiKey').value.trim();
-    const anthropicKey = document.getElementById('anthropicApiKey').value.trim();
-    const customEndpoint = document.getElementById('customApiEndpoint').value.trim();
-    const customKey = document.getElementById('customApiKey').value.trim();
+    const apiKey = DOM.apiKeyInput?.value.trim() || '';
+    const selectedModel = DOM.modelSelect?.value || CONFIG.DEFAULT_MODEL;
 
     // Save to localStorage
-    if (openRouterKey) {
-        localStorage.setItem('openRouterApiKey', openRouterKey);
+    if (apiKey) {
+        localStorage.setItem('apiKey', apiKey);
+        CONFIG.API_KEY = apiKey;
     } else {
-        localStorage.removeItem('openRouterApiKey');
+        localStorage.removeItem('apiKey');
+        CONFIG.API_KEY = '';
     }
     
-    if (geminiKey1) {
-        localStorage.setItem('geminiApiKey1', geminiKey1);
-    } else {
-        localStorage.removeItem('geminiApiKey1');
-    }
+    // Save model selection
+    localStorage.setItem('selectedModel', selectedModel);
+    CONFIG.DEFAULT_MODEL = selectedModel;
     
-    if (geminiKey2) {
-        localStorage.setItem('geminiApiKey2', geminiKey2);
-    } else {
-        localStorage.removeItem('geminiApiKey2');
-    }
-
-    if (openAIKey) {
-        localStorage.setItem('openaiApiKey', openAIKey);
-    } else {
-        localStorage.removeItem('openaiApiKey');
-    }
-
-    if (anthropicKey) {
-        localStorage.setItem('anthropicApiKey', anthropicKey);
-    } else {
-        localStorage.removeItem('anthropicApiKey');
-    }
-
-    if (customEndpoint) {
-        localStorage.setItem('customApiEndpoint', customEndpoint);
-    } else {
-        localStorage.removeItem('customApiEndpoint');
-    }
-
-    if (customKey) {
-        localStorage.setItem('customApiKey', customKey);
-    } else {
-        localStorage.removeItem('customApiKey');
-    }
-
-    // Update CONFIG with new keys
-    if (openRouterKey) CONFIG.OPENROUTER_API_KEY = openRouterKey;
-    if (geminiKey1) CONFIG.GEMINI_API_KEYS[0] = geminiKey1;
-    if (geminiKey2) CONFIG.GEMINI_API_KEYS[1] = geminiKey2;
-    if (openAIKey) CONFIG.OPENAI_API_KEY = openAIKey;
-    if (anthropicKey) CONFIG.ANTHROPIC_API_KEY = anthropicKey;
-    if (customEndpoint) CONFIG.CUSTOM_API_ENDPOINT = customEndpoint;
-    if (customKey) CONFIG.CUSTOM_API_KEY = customKey;
-
-    showSuccess('API keys saved successfully!');
+    showApiStatus('API configuration saved successfully!', 'success');
 }
 
 function resetApiKeys() {
-    if (confirm('Are you sure you want to reset to default API keys? This will clear all custom keys.')) {
-        localStorage.removeItem('openRouterApiKey');
-        localStorage.removeItem('geminiApiKey1');
-        localStorage.removeItem('geminiApiKey2');
-        localStorage.removeItem('openaiApiKey');
-        localStorage.removeItem('anthropicApiKey');
-        localStorage.removeItem('customApiEndpoint');
-        localStorage.removeItem('customApiKey');
-        
-        document.getElementById('openrouterApiKey').value = '';
-        document.getElementById('geminiApiKey1').value = '';
-        document.getElementById('geminiApiKey2').value = '';
-        document.getElementById('openaiApiKey').value = '';
-        document.getElementById('anthropicApiKey').value = '';
-        document.getElementById('customApiEndpoint').value = '';
-        document.getElementById('customApiKey').value = '';
-        
-        showSuccess('API keys reset to defaults!');
+    if (confirm('Are you sure you want to reset all settings?')) {
+        localStorage.removeItem('apiKey');
+        localStorage.removeItem('selectedModel');
+        if (DOM.apiKeyInput) {
+            DOM.apiKeyInput.value = '';
+        }
+        if (DOM.modelSelect) {
+            DOM.modelSelect.value = CONFIG.DEFAULT_MODEL;
+        }
+        CONFIG.API_KEY = '';
+        CONFIG.DEFAULT_MODEL = 'gpt-5';
+        showSuccess('Settings reset to defaults!');
     }
 }
 
 function clearApiKeys() {
-    if (confirm('Are you sure you want to clear all API keys? This will remove all stored keys.')) {
-        localStorage.removeItem('openRouterApiKey');
-        localStorage.removeItem('geminiApiKey1');
-        localStorage.removeItem('geminiApiKey2');
-        localStorage.removeItem('openaiApiKey');
-        localStorage.removeItem('anthropicApiKey');
-        localStorage.removeItem('customApiEndpoint');
-        localStorage.removeItem('customApiKey');
-        
-        document.getElementById('openrouterApiKey').value = '';
-        document.getElementById('geminiApiKey1').value = '';
-        document.getElementById('geminiApiKey2').value = '';
-        document.getElementById('openaiApiKey').value = '';
-        document.getElementById('anthropicApiKey').value = '';
-        document.getElementById('customApiEndpoint').value = '';
-        document.getElementById('customApiKey').value = '';
-        
-        showSuccess('All API keys cleared!');
+    if (confirm('Are you sure you want to clear all settings?')) {
+        localStorage.removeItem('apiKey');
+        localStorage.removeItem('selectedModel');
+        if (DOM.apiKeyInput) {
+            DOM.apiKeyInput.value = '';
+        }
+        if (DOM.modelSelect) {
+            DOM.modelSelect.value = CONFIG.DEFAULT_MODEL;
+        }
+        CONFIG.API_KEY = '';
+        CONFIG.DEFAULT_MODEL = 'gpt-5';
+        showSuccess('All settings cleared!');
     }
 }
 
@@ -1011,7 +661,7 @@ function togglePasswordVisibility(elementId) {
     }
 }
 
-async function testApiKey(keyType) {
+async function testApiKey() {
     const button = event.target;
     const originalText = button.innerHTML;
     
@@ -1021,83 +671,41 @@ async function testApiKey(keyType) {
     button.disabled = true;
     
     try {
-        let apiKey, testUrl, testBody;
+        const apiKey = DOM.apiKeyInput?.value.trim() || '';
+        const selectedModel = DOM.modelSelect?.value || CONFIG.DEFAULT_MODEL;
         
-        switch(keyType) {
-            case 'openrouter':
-                apiKey = document.getElementById('openrouterApiKey').value.trim();
                 if (!apiKey) {
-                    throw new Error('No OpenRouter API key provided');
-                }
-                testUrl = CONFIG.OPENROUTER_API_URL;
-                testBody = {
-                    model: CONFIG.OPENROUTER_MODEL,
-                    messages: [{ role: 'user', content: 'Hello' }],
-                    max_tokens: 10,
-                    temperature: 0.7
-                };
-                break;
-                
-            case 'gemini1':
-                apiKey = document.getElementById('geminiApiKey1').value.trim();
-                if (!apiKey) {
-                    throw new Error('No Gemini API key 1 provided');
-                }
-                testUrl = `${CONFIG.GEMINI_API_URL}?key=${apiKey}`;
-                testBody = {
-                    contents: [{ parts: [{ text: 'Hello' }] }],
-                    generationConfig: { maxOutputTokens: 10, temperature: 0.7 }
-                };
-                break;
-                
-            case 'gemini2':
-                apiKey = document.getElementById('geminiApiKey2').value.trim();
-                if (!apiKey) {
-                    throw new Error('No Gemini API key 2 provided');
-                }
-                testUrl = `${CONFIG.GEMINI_API_URL}?key=${apiKey}`;
-                testBody = {
-                    contents: [{ parts: [{ text: 'Hello' }] }],
-                    generationConfig: { maxOutputTokens: 10, temperature: 0.7 }
-                };
-                break;
-                
-            default:
-                throw new Error('Invalid API key type');
+            throw new Error('No API key provided');
         }
         
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-        
-        if (keyType === 'openrouter') {
-            headers['Authorization'] = `Bearer ${apiKey}`;
-            headers['HTTP-Referer'] = window.location.origin;
-            headers['X-Title'] = 'PLAT SKILL Task Generator';
-        }
-        
-        const response = await fetch(testUrl, {
+        const response = await fetch(CONFIG.API_URL, {
             method: 'POST',
-            headers: headers,
-            body: JSON.stringify(testBody)
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: selectedModel,
+                messages: [{ role: 'user', content: 'Hello' }]
+            })
         });
         
         if (response.ok) {
             button.innerHTML = '<i class="fas fa-check"></i> Valid';
             button.classList.remove('testing');
             button.classList.add('success');
-            showSuccess(`${keyType.toUpperCase()} API key is valid!`);
+            showSuccess(`API key and ${CONFIG.AVAILABLE_MODELS[selectedModel]} model are working!`);
         } else {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.error?.message || `HTTP ${response.status}`);
         }
         
     } catch (error) {
-        console.error(`API key test failed for ${keyType}:`, error);
+        console.error('API key test failed:', error);
         button.innerHTML = '<i class="fas fa-times"></i> Invalid';
         button.classList.remove('testing');
         button.classList.add('error');
-        displayError(`${keyType.toUpperCase()} API key test failed: ${error.message}`);
+        displayError(`API test failed: ${error.message}`);
     }
     
     // Reset button after 3 seconds
@@ -1108,94 +716,6 @@ async function testApiKey(keyType) {
     }, 3000);
 }
 
-// Remove API key functionality
-function removeApiKey(provider) {
-    if (!confirm('Are you sure you want to remove this API key? This action cannot be undone.')) {
-        return;
-    }
-    
-    let inputId, storageKey, message;
-    
-    switch (provider) {
-        case 'openrouter':
-            inputId = 'openrouterApiKey';
-            storageKey = 'openRouterApiKey';
-            message = 'OpenRouter API key removed';
-            break;
-        case 'gemini1':
-            inputId = 'geminiApiKey1';
-            storageKey = 'geminiApiKey1';
-            message = 'Gemini API Key 1 removed';
-            break;
-        case 'gemini2':
-            inputId = 'geminiApiKey2';
-            storageKey = 'geminiApiKey2';
-            message = 'Gemini API Key 2 removed';
-            break;
-        case 'openai':
-            inputId = 'openaiApiKey';
-            storageKey = 'openaiApiKey';
-            message = 'OpenAI API key removed';
-            break;
-        case 'anthropic':
-            inputId = 'anthropicApiKey';
-            storageKey = 'anthropicApiKey';
-            message = 'Anthropic API key removed';
-            break;
-        case 'custom-endpoint':
-            inputId = 'customApiEndpoint';
-            storageKey = 'customApiEndpoint';
-            message = 'Custom API endpoint removed';
-            break;
-        case 'custom-key':
-            inputId = 'customApiKey';
-            storageKey = 'customApiKey';
-            message = 'Custom API key removed';
-            break;
-        default:
-            console.error('Unknown provider:', provider);
-        return;
-    }
-    
-    // Clear the input field
-    const input = document.getElementById(inputId);
-    if (input) {
-        input.value = '';
-    }
-    
-    // Remove from localStorage
-    localStorage.removeItem(storageKey);
-    
-    // Update CONFIG object to reset to default/empty values
-    switch (provider) {
-        case 'openrouter':
-            CONFIG.OPENROUTER_API_KEY = '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';
-            break;
-        case 'gemini1':
-            CONFIG.GEMINI_API_KEYS[0] = 'AIzaSyAh_H6EwL3KOgJ8m086W3OBlCqPo7Khewk';
-            break;
-        case 'gemini2':
-            CONFIG.GEMINI_API_KEYS[1] = 'AIzaSyC0rDffMvwYnTVpAsUI2iMY-N5CqU7lvmU';
-            break;
-        case 'openai':
-            CONFIG.OPENAI_API_KEY = '';
-            break;
-        case 'anthropic':
-            CONFIG.ANTHROPIC_API_KEY = '';
-            break;
-        case 'custom-endpoint':
-            CONFIG.CUSTOM_API_ENDPOINT = '';
-            break;
-        case 'custom-key':
-            CONFIG.CUSTOM_API_KEY = '';
-            break;
-    }
-    
-    // Show success message
-    displaySuccess(message);
-    
-    console.log(`${message} and reset to default`);
-}
 
 
 
@@ -1260,7 +780,7 @@ SECTION & QUALITY RULES  ——  (numbers match your checklist)
 24–28. One full sentence stating real-world benefit; phrasing depth also matches Bloom level.
 
 LANGUAGE & CULTURE
-* Simple English that translates cleanly to Indian languages.  
+* Simple English with clear, professional language.
 * Pan-India references (UPI, local markets, campus fest).
 
 SKILL MAPPING:
@@ -1387,10 +907,8 @@ async function testPromptWithAPI(prompt) {
     try {
         console.log('Testing custom prompt with API...');
         
-        const response = await makeGeminiAPICall(prompt, {
-            maxOutputTokens: 500, // Shorter for testing
-            temperature: 0.7,
-            topP: 0.95
+        const response = await makeAPICall(prompt, {
+            model: CONFIG.DEFAULT_MODEL
         });
         
         result.success = true;
@@ -1530,7 +1048,7 @@ One formal, complete sentence on real-world benefit;  depth must match  Bloom le
 The sentence must **NOT** start with any -ing verb 
 
 LANGUAGE & CULTURE  
-Use examples relatable to Indian students; keep phrasing translation-friendly.
+Use examples relatable to Indian students; keep phrasing clear and professional.
 
 END OF INSTRUCTIONS`;
 
@@ -1646,10 +1164,8 @@ async function testPromptWithAPI(prompt) {
     try {
         console.log('Testing custom prompt with API...');
         
-        const response = await makeGeminiAPICall(prompt, {
-            maxOutputTokens: 500, // Shorter for testing
-            temperature: 0.7,
-            topP: 0.95
+        const response = await makeAPICall(prompt, {
+            model: CONFIG.DEFAULT_MODEL
         });
         
         result.success = true;
@@ -1776,7 +1292,7 @@ One formal, complete sentence on real-world benefit;  depth must match  Bloom le
 The sentence must **NOT** start with any -ing verb 
 
 LANGUAGE & CULTURE  
-Use examples relatable to Indian students; keep phrasing translation-friendly.
+Use examples relatable to Indian students; keep phrasing clear and professional.
 
 END OF INSTRUCTIONS`;
 
