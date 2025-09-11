@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Download Debug - PLAT SKILL</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .debug-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .test-table th, .test-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .test-table th {
+            background-color: #f2f2f2;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .debug-info {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>🔧 CSV Download Debug Test</h1>
+        <p>Testing CSV download functionality...</p>
+        
+        <button onclick="testCSVDownload()">Test CSV Download</button>
+        <button onclick="checkTableStructure()">Check Table Structure</button>
+        <button onclick="addTestData()">Add Test Data</button>
+        
+        <div id="debugInfo" class="debug-info"></div>
+        
+        <table id="testTable" class="test-table">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAllTest"> Select</th>
+                    <th>Skill Level</th>
+                    <th>Bloom Level</th>
+                    <th>Main Skill</th>
+                    <th>Sub Skill</th>
+                    <th>Heading</th>
+                    <th>Content</th>
+                    <th>Task</th>
+                    <th>Application</th>
+                </tr>
+            </thead>
+            <tbody id="testTableBody">
+                <!-- Test data will be added here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function log(message) {
+            const debugInfo = document.getElementById('debugInfo');
+            debugInfo.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '<br>';
+            console.log(message);
+        }
+
+        function addTestData() {
+            const tbody = document.getElementById('testTableBody');
+            tbody.innerHTML = '';
+            
+            const testTasks = [
+                {
+                    skillLevel: 'Low',
+                    bloomLevel: 'Remembering',
+                    mainSkill: 'Communication',
+                    subSkill: 'Verbal',
+                    heading: 'Test Task 1',
+                    content: 'This is a test task content',
+                    task: 'Complete this test task',
+                    application: 'Apply in real world'
+                },
+                {
+                    skillLevel: 'Medium',
+                    bloomLevel: 'Understanding',
+                    mainSkill: 'Problem-Solving',
+                    subSkill: 'Analysis',
+                    heading: 'Test Task 2',
+                    content: 'This is another test task content',
+                    task: 'Complete this second test task',
+                    application: 'Apply in workplace'
+                }
+            ];
+
+            testTasks.forEach((task, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input type="checkbox" class="task-checkbox" data-task-index="${index}"></td>
+                    <td>${task.skillLevel}</td>
+                    <td>${task.bloomLevel}</td>
+                    <td>${task.mainSkill}</td>
+                    <td>${task.subSkill}</td>
+                    <td>${task.heading}</td>
+                    <td>${task.content}</td>
+                    <td>${task.task}</td>
+                    <td>${task.application}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            log('Test data added to table');
+        }
+
+        function checkTableStructure() {
+            const table = document.getElementById('testTable');
+            const tbody = document.getElementById('testTableBody');
+            const checkboxes = document.querySelectorAll('.task-checkbox');
+            const checkedBoxes = document.querySelectorAll('.task-checkbox:checked');
+            
+            log(`Table found: ${table ? 'Yes' : 'No'}`);
+            log(`Table body found: ${tbody ? 'Yes' : 'No'}`);
+            log(`Total checkboxes: ${checkboxes.length}`);
+            log(`Checked checkboxes: ${checkedBoxes.length}`);
+            log(`Table rows: ${tbody.children.length}`);
+        }
+
+        function testCSVDownload() {
+            try {
+                log('Starting CSV download test...');
+                
+                const table = document.getElementById('testTable');
+                if (!table) {
+                    log('ERROR: No table found');
+                    return;
+                }
+
+                // Get selected rows (excluding header)
+                const selectedRows = Array.from(table.querySelectorAll('tbody tr')).filter(row => {
+                    const checkbox = row.querySelector('.task-checkbox');
+                    return checkbox && checkbox.checked;
+                });
+
+                log(`Selected rows: ${selectedRows.length}`);
+
+                if (selectedRows.length === 0) {
+                    log('ERROR: No rows selected');
+                    return;
+                }
+
+                // Create CSV content with header
+                const headerRow = table.querySelector('thead tr');
+                const headerCells = Array.from(headerRow.querySelectorAll('th'));
+                const headerContent = headerCells.map(cell => {
+                    const text = cell.textContent.replace(/"/g, '""');
+                    return `"${text}"`;
+                }).join(',');
+                
+                log(`Header content: ${headerContent}`);
+
+                // Add selected data rows
+                const dataContent = selectedRows.map(row => {
+                    const cells = Array.from(row.querySelectorAll('td'));
+                    return cells.map(cell => {
+                        const text = cell.textContent.replace(/"/g, '""');
+                        return `"${text}"`;
+                    }).join(',');
+                }).join('\n');
+                
+                const csvContent = headerContent + '\n' + dataContent;
+                log(`CSV content length: ${csvContent.length}`);
+                
+                // Create and download CSV file
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `Test_CSV_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                log('SUCCESS: CSV download initiated');
+            } catch (error) {
+                log(`ERROR: ${error.message}`);
+                console.error('CSV download error:', error);
+            }
+        }
+
+        // Add event listeners
+        document.getElementById('selectAllTest').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.task-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            log(`Select all: ${this.checked ? 'checked' : 'unchecked'}`);
+        });
+
+        // Add test data on page load
+        window.onload = function() {
+            log('Debug page loaded');
+            addTestData();
+        };
+    </script>
+</body>
+</html>

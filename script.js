@@ -351,11 +351,16 @@ function downloadExcel() {
 // Download Selected CSV
 function downloadSelectedExcel() {
     try {
+        console.log('Starting CSV download...');
+        
         const table = document.getElementById('tasksTable');
         if (!table) {
+            console.error('No tasks table found');
             displayError('No tasks table found');
             return;
         }
+
+        console.log('Table found, checking for selected rows...');
 
         // Get selected rows (excluding header)
         const selectedRows = Array.from(table.querySelectorAll('tbody tr')).filter(row => {
@@ -363,39 +368,247 @@ function downloadSelectedExcel() {
             return checkbox && checkbox.checked;
         });
 
+        console.log(`Found ${selectedRows.length} selected rows`);
+
         if (selectedRows.length === 0) {
+            console.log('No rows selected');
             displayError('Please select at least one task to download');
             return;
         }
 
         // Create CSV content with header
         const headerRow = table.querySelector('thead tr');
+        if (!headerRow) {
+            console.error('No header row found');
+            displayError('Table structure error: No header row found');
+            return;
+        }
+
         const headerCells = Array.from(headerRow.querySelectorAll('th'));
-        const headerContent = headerCells.map(cell => `"${cell.textContent.replace(/"/g, '""')}"`).join(',');
+        console.log(`Found ${headerCells.length} header cells`);
         
+        const headerContent = headerCells.map(cell => {
+            const text = cell.textContent.trim().replace(/"/g, '""');
+            return `"${text}"`;
+        }).join(',');
+        
+        console.log('Header content created:', headerContent);
+
         // Add selected data rows
-        const dataContent = selectedRows.map(row => {
+        const dataContent = selectedRows.map((row, index) => {
             const cells = Array.from(row.querySelectorAll('td'));
-            return cells.map(cell => `"${cell.textContent.replace(/"/g, '""')}"`).join(',');
+            console.log(`Row ${index}: ${cells.length} cells`);
+            return cells.map(cell => {
+                const text = cell.textContent.trim().replace(/"/g, '""');
+                return `"${text}"`;
+            }).join(',');
         }).join('\n');
         
         const csvContent = headerContent + '\n' + dataContent;
+        console.log('CSV content created, length:', csvContent.length);
         
         // Create and download CSV file
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `Employability_Tasks_Selected_${selectedRows.length}_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
+        
+        // Set download attributes
+        link.href = url;
+        link.download = `Employability_Tasks_Selected_${selectedRows.length}_${new Date().toISOString().split('T')[0]}.csv`;
+        link.style.display = 'none';
+        
+        // Add to DOM, click, and remove
         document.body.appendChild(link);
+        console.log('Triggering download...');
         link.click();
-        document.body.removeChild(link);
+        
+        // Clean up
+        setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            console.log('Download cleanup completed');
+        }, 100);
         
         showSuccess(`Selected ${selectedRows.length} tasks downloaded successfully!`);
+        console.log('CSV download completed successfully');
+        
+        // Fallback: If download doesn't work, try alternative method
+        setTimeout(() => {
+            if (!document.querySelector('a[download]')) {
+                console.log('Trying fallback download method...');
+                downloadCSVFallback(csvContent, selectedRows.length);
+            }
+        }, 1000);
+        
     } catch (error) {
         console.error('Error downloading selected CSV:', error);
-        displayError('Failed to download selected CSV file');
+        displayError(`Failed to download CSV file: ${error.message}`);
+    }
+}
+
+// Fallback CSV download method
+function downloadCSVFallback(csvContent, selectedCount) {
+    try {
+        console.log('Using fallback download method...');
+        
+        // Method 1: Try window.open with data URL
+        const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+        const newWindow = window.open(dataUrl, '_blank');
+        
+        if (newWindow) {
+            console.log('Fallback method 1: Window.open successful');
+            showSuccess(`Selected ${selectedCount} tasks opened in new window!`);
+            return;
+        }
+        
+        // Method 2: Try creating a temporary textarea and copy to clipboard
+        const textarea = document.createElement('textarea');
+        textarea.value = csvContent;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-999999px';
+        textarea.style.top = '-999999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        
+        try {
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            
+            if (successful) {
+                console.log('Fallback method 2: Copy to clipboard successful');
+                showSuccess(`Selected ${selectedCount} tasks copied to clipboard! Paste into Excel or text editor.`);
+                return;
+            }
+        } catch (err) {
+            document.body.removeChild(textarea);
+        }
+        
+        // Method 3: Show content in alert for manual copy
+        console.log('Fallback method 3: Showing content in alert');
+        const truncatedContent = csvContent.length > 1000 ? csvContent.substring(0, 1000) + '...' : csvContent;
+        alert(`CSV Content (first 1000 chars):\n\n${truncatedContent}\n\nPlease copy this content and save as .csv file.`);
+        showSuccess(`Selected ${selectedCount} tasks content displayed above. Please copy and save manually.`);
+        
+    } catch (error) {
+        console.error('Fallback download failed:', error);
+        displayError('All download methods failed. Please try selecting tasks and downloading again.');
+    }
+}
+
+// Test CSV download function
+function testCSVDownload() {
+    console.log('Testing CSV download functionality...');
+    
+    const table = document.getElementById('tasksTable');
+    if (!table) {
+        console.log('No table found - creating test data...');
+        createTestDataForDownload();
+        return;
+    }
+    
+    const tbody = table.querySelector('tbody');
+    if (!tbody || tbody.children.length === 0) {
+        console.log('No tasks in table - creating test data...');
+        createTestDataForDownload();
+        return;
+    }
+    
+    // Select all tasks for testing
+    const checkboxes = document.querySelectorAll('.task-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    
+    // Update selection counter
+    updateSelectionCounter();
+    
+    // Try download
+    console.log('Attempting download with all tasks selected...');
+    downloadSelectedExcel();
+}
+
+// Create test data for download testing
+function createTestDataForDownload() {
+    const testTasks = [
+        {
+            skillLevel: 'Low',
+            bloomLevel: 'Remembering',
+            mainSkill: 'Communication',
+            subSkill: 'Verbal',
+            heading: 'Test Task 1',
+            content: 'This is a test task for download functionality',
+            task: 'Complete this test task to verify CSV download',
+            application: 'Apply this in real-world scenarios'
+        },
+        {
+            skillLevel: 'Medium',
+            bloomLevel: 'Understanding',
+            mainSkill: 'Problem-Solving',
+            subSkill: 'Analysis',
+            heading: 'Test Task 2',
+            content: 'Another test task for download verification',
+            task: 'Complete this second test task',
+            application: 'Use this in workplace situations'
+        }
+    ];
+    
+    // Create a temporary table for testing
+    const table = document.createElement('table');
+    table.id = 'testTasksTable';
+    table.className = 'tasks-table';
+    
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+        <tr>
+            <th>Select</th>
+            <th>Skill Level</th>
+            <th>Bloom Level</th>
+            <th>Main Skill</th>
+            <th>Sub Skill</th>
+            <th>Heading</th>
+            <th>Content</th>
+            <th>Task</th>
+            <th>Application</th>
+        </tr>
+    `;
+    
+    const tbody = document.createElement('tbody');
+    testTasks.forEach((task, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="checkbox" class="task-checkbox" checked></td>
+            <td>${task.skillLevel}</td>
+            <td>${task.bloomLevel}</td>
+            <td>${task.mainSkill}</td>
+            <td>${task.subSkill}</td>
+            <td>${task.heading}</td>
+            <td>${task.content}</td>
+            <td>${task.task}</td>
+            <td>${task.application}</td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    
+    // Temporarily replace the main table
+    const mainTable = document.getElementById('tasksTable');
+    if (mainTable) {
+        mainTable.style.display = 'none';
+        mainTable.parentNode.insertBefore(table, mainTable);
+        
+        // Test download
+        setTimeout(() => {
+            downloadSelectedExcel();
+            
+            // Restore original table
+            setTimeout(() => {
+                table.remove();
+                mainTable.style.display = '';
+            }, 2000);
+        }, 500);
     }
 }
 
