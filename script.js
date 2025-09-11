@@ -22,6 +22,24 @@ const CONFIG = {
     REQUIRED_FIELDS: ['education-level', 'education-year', 'semester', 'main-skill', 'skill-level', 'task-count']
 };
 
+// Clear old hardcoded prompts from localStorage
+function clearOldPrompts() {
+    const savedPrompt = localStorage.getItem('customPrompt');
+    if (savedPrompt && (
+        savedPrompt.includes('ALLOWED SUB-SKILLS MAP') || 
+        savedPrompt.includes('bite-sized "Level-Up Tasks"') || 
+        savedPrompt.includes('LEVEL-UP TASKS') ||
+        savedPrompt.includes('FINAL_PROMPT') ||
+        savedPrompt.includes('Final standardized prompt') ||
+        savedPrompt.includes('Communication → verbal reasoning') ||
+        savedPrompt.includes('Problem-Solving → logical reasoning')
+    )) {
+        console.log('Clearing old hardcoded prompt from localStorage...');
+        localStorage.removeItem('customPrompt');
+        console.log('Old prompt cleared successfully!');
+    }
+}
+
 // Load saved API key and model on startup
 function loadConfigFromStorage() {
     const savedApiKey = localStorage.getItem('apiKey');
@@ -35,10 +53,6 @@ function loadConfigFromStorage() {
         CONFIG.DEFAULT_MODEL = savedModel;
     }
 }
-
-
-
-
 
 // DOM Elements
 const DOM = {
@@ -59,11 +73,6 @@ const DOM = {
     saveApiConfigBtn: null,
     resetApiConfigBtn: null,
     apiStatus: null,
-
-
-
-
-
     
     init() {
         this.form = document.getElementById('taskForm');
@@ -83,19 +92,16 @@ const DOM = {
         this.saveApiConfigBtn = document.getElementById('save-api-config');
         this.resetApiConfigBtn = document.getElementById('reset-api-config');
         this.apiStatus = document.getElementById('api-status');
-
-
-
-
-        
-
-
     }
 };
 
 // Initialize application
 function initApp() {
     console.log('Initializing PLAT SKILL application...');
+    
+    // Clear any old hardcoded prompts from localStorage on startup
+    clearOldPrompts();
+    console.log('PLAT SKILL v2.0 - All hardcoded prompts removed!');
     
     // Load saved API keys first
     loadConfigFromStorage();
@@ -113,7 +119,6 @@ function initApp() {
     DOM.saveApiConfigBtn?.addEventListener('click', saveApiKeys);
     DOM.resetApiConfigBtn?.addEventListener('click', resetApiKeys);
 
-
     // Initialize API keys
     loadSavedApiKeys();
     
@@ -122,7 +127,6 @@ function initApp() {
     
     // Initialize prompt editor
     initializePromptEditor();
-
 }
 
 // Initialize model selection dropdown
@@ -228,8 +232,6 @@ async function makeAPICall(prompt, config = {}) {
     }
 }
 
-
-
 // Generate employability tasks
 async function generateEmployabilityTasks(studentData) {
     try {
@@ -246,8 +248,6 @@ async function generateEmployabilityTasks(studentData) {
         throw new Error(`Task generation failed: ${error.message}`);
     }
 }
-
-
 
 // Parse employability tasks from AI response
 function parseEmployabilityTasks(text, studentData) {
@@ -309,7 +309,6 @@ async function displayResults(data) {
     DOM.resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-
 // Populate tasks table
 function populateTasksTable(tasks) {
     DOM.tasksTableBody.innerHTML = '';
@@ -335,12 +334,6 @@ function populateTasksTable(tasks) {
     // Initialize row selection functionality
     initializeRowSelection();
 }
-
-
-
-
-
-
 
 // Download Selected CSV (only selected tasks)
 function downloadExcel() {
@@ -699,12 +692,6 @@ function updateSelectAllState() {
     }
 }
 
-
-
-
-
-
-
 // Reset form
 function resetForm() {
     DOM.form.reset();
@@ -787,13 +774,6 @@ function getErrorMessage(error) {
     if (error.message.includes('API')) return 'AI service temporarily unavailable. Please try again.';
     return 'Something went wrong. Please try again.';
 }
-
-// Prompt Management Functions
-
-
-
-
-
 
 // API Key Management Functions
 function loadSavedApiKeys() {
@@ -929,13 +909,6 @@ async function testApiKey() {
     }, 3000);
 }
 
-
-
-
-
-
-
-
 // Prompt Editor Functions
 function initializePromptEditor() {
     // Load default prompt
@@ -951,62 +924,8 @@ function initializePromptEditor() {
 }
 
 function loadDefaultPrompt() {
-    const defaultPrompt = `You are an instructional designer creating {task-count} bite-sized "Level-Up Tasks" for Indian UG or PG students.
-
-LEARNER PROFILE
-* Education Level (UG / PG): {education-level}
-* Year / Semester: {education-year}, {semester}
-* Target Employability Skill: {main-skill}
-
-GLOBAL OUTPUT  ——  STRICT SCHEMA
-* Return exactly {task-count} pipe-separated table rows, no extra text:
-  Skill Level | Bloom Level | Main Skill | Sub Skill | Heading | Content | Task | Application
-* Skill–Bloom mapping per row:  
-    Low → Remembering / Understanding Medium → Applying / Analyzing High → Evaluating / Creating  
-* Word windows (model MUST refuse if any row breaks them):  
-    Heading 3–7 w Content 40–50 w Task 50–80 w Application 10–20 w
-
-SECTION & QUALITY RULES  ——  (numbers match your checklist)
-
-▶ Skill Level  
-* Output Low / Medium / High (as provided in the user prompt).
-
-▶ Bloom Level  
-* Choose ONE Bloom category from the mapping above—no other words.
-
-▶ Main Skill  
-* Output the main skill category (e.g., Communication, Problem-Solving, Leadership, etc.).
-
-▶ Sub Skill  
-* Output a specific sub-skill within the main skill (e.g., "Verbal Communication", "Analytical Thinking", "Team Motivation", etc.).
-
-▶ Heading (3–7 words)  
-1–4. Balanced tone; hook-style idiom/quote OK; tied to task.
-
-▶ Content (40–50 words)  
-5–14. Relate to target skill; include *at least one* engaging fact, theory, index, hidden approach *or* Indian mini-case; unique; plain English; complexity aligned with Bloom level.
-
-▶ Task (50–80 words)  
-15–23. Text-box response only; fun, ≤5-min action; response ≤80 words; specific; cognitive demand matches Bloom level (e.g., recall fact for Remembering, design improvement for Creating).
-
-▶ Application (10–20 words)  
-24–28. One full sentence stating real-world benefit; phrasing depth also matches Bloom level.
-
-LANGUAGE & CULTURE
-* Simple English with clear, professional language.
-* Pan-India references (UPI, local markets, campus fest).
-
-SKILL MAPPING:
-- Main Skill: {main-skill}
-- Subskills to focus on: Based on the selected skill
-- Each task should directly target specific subskills within {main-skill}
-
-TASK DISTRIBUTION:
-- Create tasks for {skill-level} skill level
-- Tasks must be self-contained (no external resources needed)
-- Focus on employability skills relevant to the selected skill focus
-
-END OF INSTRUCTIONS`;
+    // Completely blank default prompt - users should create their own custom prompts
+    const defaultPrompt = '';
 
     // Store default prompt globally
     window.defaultPrompt = defaultPrompt;
@@ -1016,285 +935,26 @@ function loadSavedPrompt() {
     const savedPrompt = localStorage.getItem('customPrompt');
     const promptTextarea = document.getElementById('custom-prompt');
     
-    // Check if the saved prompt has the old 6-column format
-    if (savedPrompt && savedPrompt.includes('Skill Level | Bloom Level | Heading | Content | Task | Application')) {
-        console.log('Detected old 6-column prompt format, clearing custom prompt...');
+    // Clear any old hardcoded prompts from localStorage and make textarea blank
+    if (savedPrompt && (savedPrompt.includes('ALLOWED SUB-SKILLS MAP') || savedPrompt.includes('bite-sized "Level-Up Tasks"'))) {
+        console.log('Detected old hardcoded prompt, clearing...');
         localStorage.removeItem('customPrompt');
         if (promptTextarea) {
-            promptTextarea.value = window.defaultPrompt;
+            promptTextarea.value = '';
         }
-        showSuccess('Updated to new 8-column format! Please regenerate tasks.');
-    } else if (savedPrompt && promptTextarea) {
-        promptTextarea.value = savedPrompt;
+        showSuccess('Cleared old hardcoded prompt! Textarea is now blank.');
     } else if (promptTextarea) {
-        promptTextarea.value = window.defaultPrompt;
+        promptTextarea.value = '';
     }
 }
 
 function resetToDefaultPrompt() {
-    const promptTextarea = document.getElementById('custom-prompt');
-    if (promptTextarea && window.defaultPrompt) {
-        promptTextarea.value = window.defaultPrompt;
-        // Also clear the saved custom prompt from localStorage
-        localStorage.removeItem('customPrompt');
-        showSuccess('Prompt reset to default and custom prompt cleared!');
-    }
-}
-
-function saveCustomPrompt() {
     const promptTextarea = document.getElementById('custom-prompt');
     if (promptTextarea) {
-        const customPrompt = promptTextarea.value.trim();
-        if (customPrompt) {
-            localStorage.setItem('customPrompt', customPrompt);
-            showSuccess('Custom prompt saved successfully!');
-        } else {
-            displayError('Please enter a valid prompt before saving.');
-        }
-    }
-}
-
-async function testCustomPrompt() {
-    const promptTextarea = document.getElementById('custom-prompt');
-    if (!promptTextarea || !promptTextarea.value.trim()) {
-        displayError('Please enter a prompt to test.');
-        return;
-    }
-
-    const customPrompt = promptTextarea.value.trim();
-    
-    // Get form data for placeholders
-    const formData = new FormData(DOM.form);
-    const studentData = Object.fromEntries(formData.entries());
-    
-    // Check if required fields are filled
-    const requiredFields = ['education-level', 'education-year', 'semester', 'main-skill', 'skill-level', 'task-count'];
-    const missingFields = requiredFields.filter(field => !studentData[field]?.trim());
-    
-    if (missingFields.length > 0) {
-        displayError(`Please fill in all required fields before testing: ${missingFields.join(', ')}`);
-        return;
-    }
-
-    // Show loading state
-    const testBtn = document.getElementById('test-prompt');
-    const originalText = testBtn.innerHTML;
-    testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
-    testBtn.disabled = true;
-
-    try {
-        // Replace placeholders in the custom prompt
-        const processedPrompt = customPrompt
-            .replace(/{education-level}/g, studentData['education-level'])
-            .replace(/{education-year}/g, studentData['education-year'])
-            .replace(/{semester}/g, studentData.semester)
-            .replace(/{main-skill}/g, studentData['main-skill'])
-            .replace(/{skill-level}/g, studentData['skill-level'])
-            .replace(/{task-count}/g, studentData['task-count']);
-
-        // Test the API call with the custom prompt
-        const testResult = await testPromptWithAPI(processedPrompt);
-        
-        // Show test results in modal
-        showTestResults(testResult);
-        
-    } catch (error) {
-        console.error('Prompt test failed:', error);
-        displayError(`Prompt test failed: ${error.message}`);
-    } finally {
-        // Reset button state
-        testBtn.innerHTML = originalText;
-        testBtn.disabled = false;
-    }
-}
-
-async function testPromptWithAPI(prompt) {
-    const result = {
-        success: false,
-        prompt: prompt,
-        response: null,
-        error: null,
-        timestamp: new Date().toISOString()
-    };
-
-    try {
-        console.log('Testing custom prompt with API...');
-        
-        const response = await makeAPICall(prompt, {
-            model: CONFIG.DEFAULT_MODEL
-        });
-        
-        result.success = true;
-        result.response = response;
-        
-        console.log('Prompt test successful');
-        
-    } catch (error) {
-        console.error('Prompt test failed:', error);
-        result.error = error.message;
-    }
-    
-    return result;
-}
-
-function showTestResults(testResult) {
-    const modal = document.getElementById('testResultsModal');
-    const resultsBody = document.getElementById('testResultsBody');
-    
-    if (!modal || !resultsBody) return;
-    
-    // Clear previous results
-    resultsBody.innerHTML = '';
-    
-    // Create result content
-    const resultHTML = `
-        <div class="test-result-item ${testResult.success ? 'test-result-success' : 'test-result-error'}">
-            <h4>
-                <i class="fas fa-${testResult.success ? 'check-circle' : 'exclamation-circle'}"></i>
-                ${testResult.success ? 'Test Successful' : 'Test Failed'}
-            </h4>
-            <p><strong>Timestamp:</strong> ${new Date(testResult.timestamp).toLocaleString()}</p>
-            <p><strong>Status:</strong> ${testResult.success ? 'API call completed successfully' : 'API call failed'}</p>
-            
-            ${testResult.success ? `
-                <p><strong>Response Preview:</strong></p>
-                <pre>${testResult.response.substring(0, 300)}${testResult.response.length > 300 ? '...' : ''}</pre>
-            ` : `
-                <p><strong>Error:</strong> ${testResult.error}</p>
-            `}
-            
-            <p><strong>Processed Prompt:</strong></p>
-            <pre>${testResult.prompt}</pre>
-        </div>
-    `;
-    
-    resultsBody.innerHTML = resultHTML;
-    
-    // Show modal
-    modal.style.display = 'block';
-}
-
-function closeTestModal() {
-    const modal = document.getElementById('testResultsModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-// Prompt Editor Functions
-function initializePromptEditor() {
-    // Load default prompt
-    loadDefaultPrompt();
-    
-    // Load saved custom prompt if exists
-    loadSavedPrompt();
-    
-    // Add event listeners
-    document.getElementById('reset-prompt')?.addEventListener('click', resetToDefaultPrompt);
-    document.getElementById('test-prompt')?.addEventListener('click', testCustomPrompt);
-    document.getElementById('save-prompt')?.addEventListener('click', saveCustomPrompt);
-}
-
-function loadDefaultPrompt() {
-    const defaultPrompt = `You are an instructional designer creating *{{task-count}}* bite-sized "Level-Up Tasks" for Indian UG or PG students.
-
-LEARNER PROFILE
-• Education Level: {{education-level}}
-• Year / Semester: {{education-year}}, {{semester}}
-• Target Employability Skill: {{main-skill}}   ← must match a key in the map below
-• Skill Level: {{skill-level}}  ← all *{{task-count}}* tasks must use this level only
-
-ALLOWED SUB-SKILLS MAP  (STRICT)
-Communication → verbal reasoning, non-verbal comprehension, professional writing, interview skills, presentation skills, résumé building  
-Problem-Solving → logical reasoning, analytical thinking, critical thinking  
-Foundational Cognitive Abilities → spatial reasoning, quantitative reasoning, abstract reasoning, attention to detail. **(No logical-sequence or pattern tasks; those belong under Problem-Solving → logical reasoning.)**
-Collaboration → conflict resolution, inclusive communication, team dynamics management, networking, teamwork, stakeholder management, consultation skills, negotiation skills, customer/client/vendor relationship management  
-Emotional Intelligence → empathy, emotional regulation, stress management, positive attitude, active listening, understanding emotions  
-Leadership → ethical leadership, change management, task delegation, vision and strategic planning, resource allocation, building teams, project management, crisis management  
-Learning Agility → adaptability, proactive learning, self-initiative, open-mindedness, continuous improvement, self-reflection  
-Creativity and Innovation → brainstorming, creativity, mind-mapping, divergent thinking, innovation  
-Growth Mindset → openness to feedback, embracing challenges, persistence, resilience, learning from others
-Multifaceted Literacy Skills → digital literacy, scientific literacy and research, financial literacy, media and information literacy, cultural literacy, media literacy, environmental literacy, information literacy, business literacy / business acumen, policy literacy  
-Productivity → time management, efficiency, goal setting, prioritization, task breakdown, organizational skills, scheduling  
-Decision-Making → decision-making, risk analysis and management, ethical judgment and integrity  
-Entrepreneurship → Must be related to all the skills involved in starting a business of one's own.
-
-RULE: Every generated task must address **only** sub-skills listed for the chosen main skill. If not possible, refuse.
-
-GLOBAL OUTPUT
-• Return exactly *{{task-count}}* pipe-separated table rows, no extra text:  
-  Skill Level | Bloom Level | Main Skill | Subskill | Heading | Content | Task | Application
-• Skill–Bloom mapping per row:  
-  Low → Remembering / Understanding Medium → Applying / Analyzing High → Evaluating / Creating
-• Word windows (strict):  
-  Heading 3–7 w Content 40–50 w Task 50–80 w Application 18-20 w
-• Subskill *MUST* be from the SUB-SKILLS MAP provided above. 
-
-SECTION & QUALITY RULES
-
-▶ Heading (3–7 words)  
-Balanced tone; hook/idiom OK; ties to task.
-
-▶ Content (40–50 words)  
-Relate to the main skill **and** at least one allowed sub-skill.  
-*MUST* include exactly **one** of the following:
-  • Authentic research study or dataset → Add APA in-text citation **and** either a DOI **or** an authoritative domain. A valid DOI or authoritative source URL **must be identified** for verification, **MUST** give an "&>" before the DOI and "<&" after the DOI.
-  • Famous quote  → No citation needed
-  • A proven helpful theory 
-  • A hidden theory/habit/approach
-  • Indian mini-case → No citation needed
-
-**NEVER** invent studies.  
-If you cannot recall a real, citable source, switch to a quote, theory, fact  or mini-case **or refuse** with: "Cannot provide a verifiable source for this skill at the moment."
-
-Plain, non-technical English; unique phrasing each time.
-
-▶ Task (50–80 words)  
-Clear, fun, ≤ 5-min micro-action (including time to write the answer) **text-only response** (no links, images, or uploads) in the textbox we provide.  
-• Do **NOT** ask learners to sketch, draw, paint, build, record audio/video, upload files, or paste links.  Searching the web is acceptable **rarely**.
-• Instructions must be specific; cognitive demand must match Bloom level.  The output expected must not require more than 5 minutes of the student's time.  
-• Do **NOT** mention word counts.
-
-▶ Application (18-20 words)  
-One formal, complete sentence on real-world benefit;  depth must match  Bloom level.
- **It must BEGIN with "This task", "This exercise", "This practice", "This habit" or their synonyms or ANY NOUNS.**
-The sentence must **NOT** start with any -ing verb 
-
-LANGUAGE & CULTURE  
-Use examples relatable to Indian students; keep phrasing clear and professional.
-
-END OF INSTRUCTIONS`;
-
-    // Store default prompt globally
-    window.defaultPrompt = defaultPrompt;
-}
-
-function loadSavedPrompt() {
-    const savedPrompt = localStorage.getItem('customPrompt');
-    const promptTextarea = document.getElementById('custom-prompt');
-    
-    // Check if the saved prompt has the old 6-column format
-    if (savedPrompt && savedPrompt.includes('Skill Level | Bloom Level | Heading | Content | Task | Application')) {
-        console.log('Detected old 6-column prompt format, clearing custom prompt...');
-        localStorage.removeItem('customPrompt');
-        if (promptTextarea) {
-            promptTextarea.value = window.defaultPrompt;
-        }
-        showSuccess('Updated to new 8-column format! Please regenerate tasks.');
-    } else if (savedPrompt && promptTextarea) {
-        promptTextarea.value = savedPrompt;
-    } else if (promptTextarea) {
-        promptTextarea.value = window.defaultPrompt;
-    }
-}
-
-function resetToDefaultPrompt() {
-    const promptTextarea = document.getElementById('custom-prompt');
-    if (promptTextarea && window.defaultPrompt) {
-        promptTextarea.value = window.defaultPrompt;
+        promptTextarea.value = '';
         // Also clear the saved custom prompt from localStorage
         localStorage.removeItem('customPrompt');
-        showSuccess('Prompt reset to default and custom prompt cleared!');
+        showSuccess('Prompt cleared! Textarea is now blank.');
     }
 }
 
@@ -1438,81 +1098,14 @@ function closeTestModal() {
     }
 }
 
-// Update the createEmployabilityPrompt function to use custom prompt if available
-// Final standardized prompt for PLAT SKILL Task Generator
-const FINAL_PROMPT = `You are an instructional designer creating *{{task-count}}* bite-sized "Level-Up Tasks" for Indian UG or PG students.
-
-LEARNER PROFILE
-• Education Level: {{education-level}}
-• Year / Semester: {{education-year}}, {{semester}}
-• Target Employability Skill: {{main-skill}}   ← must match a key in the map below
-• Skill Level: {{skill-level}}  ← all *{{task-count}}* tasks must use this level only
-
-ALLOWED SUB-SKILLS MAP  (STRICT)
-Communication → verbal reasoning, non-verbal comprehension, professional writing, interview skills, presentation skills, résumé building  
-Problem-Solving → logical reasoning, analytical thinking, critical thinking  
-Foundational Cognitive Abilities → spatial reasoning, quantitative reasoning, abstract reasoning, attention to detail. **(No logical-sequence or pattern tasks; those belong under Problem-Solving → logical reasoning.)**
-Collaboration → conflict resolution, inclusive communication, team dynamics management, networking, teamwork, stakeholder management, consultation skills, negotiation skills, customer/client/vendor relationship management  
-Emotional Intelligence → empathy, emotional regulation, stress management, positive attitude, active listening, understanding emotions  
-Leadership → ethical leadership, change management, task delegation, vision and strategic planning, resource allocation, building teams, project management, crisis management  
-Learning Agility → adaptability, proactive learning, self-initiative, open-mindedness, continuous improvement, self-reflection  
-Creativity and Innovation → brainstorming, creativity, mind-mapping, divergent thinking, innovation  
-Growth Mindset → openness to feedback, embracing challenges, persistence, resilience, learning from others
-Multifaceted Literacy Skills → digital literacy, scientific literacy and research, financial literacy, media and information literacy, cultural literacy, media literacy, environmental literacy, information literacy, business literacy / business acumen, policy literacy  
-Productivity → time management, efficiency, goal setting, prioritization, task breakdown, organizational skills, scheduling  
-Decision-Making → decision-making, risk analysis and management, ethical judgment and integrity  
-Entrepreneurship → Must be related to all the skills involved in starting a business of one's own.
-
-RULE: Every generated task must address **only** sub-skills listed for the chosen main skill. If not possible, refuse.
-
-GLOBAL OUTPUT
-• Return exactly *{{task-count}}* pipe-separated table rows, no extra text:  
-  Skill Level | Bloom Level | Main Skill | Subskill | Heading | Content | Task | Application
-• Skill–Bloom mapping per row:  
-  Low → Remembering / Understanding Medium → Applying / Analyzing High → Evaluating / Creating
-• Word windows (strict):  
-  Heading 3–7 w Content 40–50 w Task 50–80 w Application 18-20 w
-• Subskill *MUST* be from the SUB-SKILLS MAP provided above. 
-
-SECTION & QUALITY RULES
-
-▶ Heading (3–7 words)  
-Balanced tone; hook/idiom OK; ties to task.
-
-▶ Content (40–50 words)  
-Relate to the main skill **and** at least one allowed sub-skill.  
-*MUST* include exactly **one** of the following:
-  • Authentic research study or dataset → Add APA in-text citation **and** either a DOI **or** an authoritative domain. A valid DOI or authoritative source URL **must be identified** for verification, **MUST** give an "&>" before the DOI and "<&" after the DOI.
-  • Famous quote  → No citation needed
-  • A proven helpful theory 
-  • A hidden theory/habit/approach
-  • Indian mini-case → No citation needed
-
-**NEVER** invent studies.  
-If you cannot recall a real, citable source, switch to a quote, theory, fact  or mini-case **or refuse** with: "Cannot provide a verifiable source for this skill at the moment."
-
-Plain, non-technical English; unique phrasing each time.
-
-▶ Task (50–80 words)  
-Clear, fun, ≤ 5-min micro-action (including time to write the answer) **text-only response** (no links, images, or uploads) in the textbox we provide.  
-• Do **NOT** ask learners to sketch, draw, paint, build, record audio/video, upload files, or paste links.  Searching the web is acceptable **rarely**.
-• Instructions must be specific; cognitive demand must match Bloom level.  The output expected must not require more than 5 minutes of the student's time.  
-• Do **NOT** mention word counts.
-
-▶ Application (18-20 words)  
-One formal, complete sentence on real-world benefit;  depth must match  Bloom level.
- **It must BEGIN with "This task", "This exercise", "This practice", "This habit" or their synonyms or ANY NOUNS.**
-The sentence must **NOT** start with any -ing verb 
-
-LANGUAGE & CULTURE  
-Use examples relatable to Indian students; keep phrasing clear and professional.
-
-END OF INSTRUCTIONS`;
-
+// Create employability prompt function
 function createEmployabilityPrompt(data) {
     // Check if there's a custom prompt saved
     const customPrompt = localStorage.getItem('customPrompt');
-    const promptToUse = customPrompt || FINAL_PROMPT;
+    const promptToUse = customPrompt || window.defaultPrompt;
+    
+    console.log('Using custom prompt:', customPrompt ? 'YES' : 'NO (using default)');
+    console.log('Final prompt to send to AI:', promptToUse);
     
     return promptToUse
         .replace(/\{\{education-level\}\}/g, data['education-level'])
@@ -1522,6 +1115,6 @@ function createEmployabilityPrompt(data) {
         .replace(/\{\{skill-level\}\}/g, data['skill-level'])
         .replace(/\{\{task-count\}\}/g, data['task-count']);
 }
+
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', initApp);
-
