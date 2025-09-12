@@ -276,8 +276,8 @@ function parseEmployabilityTasks(text, studentData) {
                 tasks.push({
                     skillLevel: columns[0],
                     bloomLevel: columns[1],
-                    mainSkill: 'N/A', // Default value
-                    subSkill: 'N/A', // Default value
+                    mainSkill: studentData['main-skill'] || '', // Use only form data
+                    subSkill: '', // Use only form data, no hardcoded fallback
                     heading: columns[2],
                     content: columns[3],
                     task: columns[4],
@@ -320,9 +320,9 @@ function populateTasksTable(tasks) {
                 <input type="checkbox" class="task-checkbox" data-task-index="${index}">
             </td>
             <td><span class="skill-level ${task.skillLevel.toLowerCase()}">${task.skillLevel}</span></td>
-            <td><span class="bloom-level">${task.bloomLevel || 'N/A'}</span></td>
-            <td><span class="main-skill">${task.mainSkill || 'N/A'}</span></td>
-            <td><span class="sub-skill">${task.subSkill || 'N/A'}</span></td>
+            <td><span class="bloom-level">${task.bloomLevel || ''}</span></td>
+            <td><span class="main-skill">${task.mainSkill || ''}</span></td>
+            <td><span class="sub-skill">${task.subSkill || ''}</span></td>
             <td><strong>${task.heading}</strong></td>
             <td>${task.content}</td>
             <td>${task.task}</td>
@@ -924,7 +924,7 @@ function initializePromptEditor() {
 }
 
 function loadDefaultPrompt() {
-    // Completely blank default prompt - users should create their own custom prompts
+    // Keep custom prompt section always clear/empty - no default prompt
     const defaultPrompt = '';
 
     // Store default prompt globally
