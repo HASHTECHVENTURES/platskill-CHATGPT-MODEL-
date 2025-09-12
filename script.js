@@ -285,11 +285,11 @@ function parseEmployabilityTasks(text, studentData) {
                         skillLevel: columns[0],
                         bloomLevel: columns[1],
                         mainSkill: studentData['main-skill'] || '', // Use only form data
-                        subSkill: '', // Use only form data, no hardcoded fallback
-                        heading: columns[2],
-                        content: columns[3],
-                        task: columns[4],
-                        application: columns[5]
+                        subSkill: columns[2] || '', // Use the 3rd column as subskill if available
+                        heading: columns[3] || columns[2], // Use 4th column or fallback to 3rd
+                        content: columns[4] || columns[3], // Use 5th column or fallback to 4th
+                        task: columns[5] || columns[4], // Use 6th column or fallback to 5th
+                        application: columns[6] || columns[5] || '' // Use 7th column or fallback to 6th
                     });
                 }
             }
