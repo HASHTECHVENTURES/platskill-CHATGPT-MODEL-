@@ -258,34 +258,40 @@ function parseEmployabilityTasks(text, studentData) {
     const lines = text.split('\n').filter(line => line.trim());
     
     for (const line of lines) {
-        if (line.includes('|') && !line.includes('Skill Level') && !line.includes('---')) {
+        if (line.includes('|') && !line.includes('Skill Level') && !line.includes('---') && !line.match(/^[\s\|\-]+$/)) {
             const columns = line.split('|').map(col => col.trim()).filter(col => col);
             
             if (columns.length >= 8) {
-                // New 8-column format
-                tasks.push({
-                    skillLevel: columns[0],
-                    bloomLevel: columns[1],
-                    mainSkill: columns[2],
-                    subSkill: columns[3],
-                    heading: columns[4],
-                    content: columns[5],
-                    task: columns[6],
-                    application: columns[7]
-                });
+                // New 8-column format - check if it's not just dashes or empty
+                const hasValidContent = columns.some(col => col && col !== '-' && col.trim() !== '');
+                if (hasValidContent) {
+                    tasks.push({
+                        skillLevel: columns[0],
+                        bloomLevel: columns[1],
+                        mainSkill: columns[2],
+                        subSkill: columns[3],
+                        heading: columns[4],
+                        content: columns[5],
+                        task: columns[6],
+                        application: columns[7]
+                    });
+                }
             } else if (columns.length >= 6) {
                 // Old 6-column format - map to new format
-                console.warn('Detected old 6-column format, mapping to new format...');
-                tasks.push({
-                    skillLevel: columns[0],
-                    bloomLevel: columns[1],
-                    mainSkill: studentData['main-skill'] || '', // Use only form data
-                    subSkill: '', // Use only form data, no hardcoded fallback
-                    heading: columns[2],
-                    content: columns[3],
-                    task: columns[4],
-                    application: columns[5]
-                });
+                const hasValidContent = columns.some(col => col && col !== '-' && col.trim() !== '');
+                if (hasValidContent) {
+                    console.warn('Detected old 6-column format, mapping to new format...');
+                    tasks.push({
+                        skillLevel: columns[0],
+                        bloomLevel: columns[1],
+                        mainSkill: studentData['main-skill'] || '', // Use only form data
+                        subSkill: '', // Use only form data, no hardcoded fallback
+                        heading: columns[2],
+                        content: columns[3],
+                        task: columns[4],
+                        application: columns[5]
+                    });
+                }
             }
         }
     }
@@ -319,12 +325,20 @@ async function displayResults(data) {
 function populateTasksTable(tasks) {
     DOM.tasksTableBody.innerHTML = '';
     
+    // Get education data from current student data
+    const educationLevel = currentStudentData ? currentStudentData['education-level'] || '' : '';
+    const educationYear = currentStudentData ? currentStudentData['education-year'] || '' : '';
+    const semester = currentStudentData ? currentStudentData['semester'] || '' : '';
+    
     tasks.forEach((task, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>
                 <input type="checkbox" class="task-checkbox" data-task-index="${index}">
             </td>
+            <td><span class="education-level">${educationLevel}</span></td>
+            <td><span class="education-year">${educationYear}</span></td>
+            <td><span class="semester">${semester}</span></td>
             <td><span class="skill-level ${task.skillLevel.toLowerCase()}">${task.skillLevel}</span></td>
             <td><span class="bloom-level">${task.bloomLevel || ''}</span></td>
             <td><span class="main-skill">${task.mainSkill || ''}</span></td>
@@ -588,6 +602,9 @@ function createTestDataForDownload() {
     thead.innerHTML = `
         <tr>
             <th>Select</th>
+            <th>Education Level</th>
+            <th>Education Year</th>
+            <th>Semester</th>
             <th>Skill Level</th>
             <th>Bloom Level</th>
             <th>Main Skill</th>
@@ -604,6 +621,9 @@ function createTestDataForDownload() {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td><input type="checkbox" class="task-checkbox" checked></td>
+            <td>Bachelor's Degree</td>
+            <td>2nd Year</td>
+            <td>3rd Semester</td>
             <td>${task.skillLevel}</td>
             <td>${task.bloomLevel}</td>
             <td>${task.mainSkill}</td>
