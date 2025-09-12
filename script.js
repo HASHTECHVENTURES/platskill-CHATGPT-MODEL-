@@ -1,4 +1,7 @@
 // PLAT SKILL Employability Task Generator
+// Global variable to store current student data for CSV download
+let currentStudentData = null;
+
 // Configuration
 const CONFIG = {
     // OpenAI API Configuration
@@ -302,6 +305,9 @@ async function displayResults(data) {
         return;
     }
     
+    // Store student data globally for CSV download
+    currentStudentData = data.studentData;
+    
     // Show tasks in English
         populateTasksTable(data.tasks);
     
@@ -369,7 +375,7 @@ function downloadSelectedExcel() {
             return;
         }
 
-        // Create CSV content with header
+        // Create CSV content with header - add education fields before skill level
         const headerRow = table.querySelector('thead tr');
         if (!headerRow) {
             console.error('No header row found');
@@ -380,21 +386,48 @@ function downloadSelectedExcel() {
         const headerCells = Array.from(headerRow.querySelectorAll('th'));
         console.log(`Found ${headerCells.length} header cells`);
         
-        const headerContent = headerCells.map(cell => {
-            const text = cell.textContent.trim().replace(/"/g, '""');
-            return `"${text}"`;
-        }).join(',');
+        // Create custom header with education fields
+        const educationHeaders = ['Education Level', 'Education Year', 'Semester'];
+        const originalHeaders = headerCells.map(cell => cell.textContent.trim().replace(/"/g, '""'));
         
-        console.log('Header content created:', headerContent);
+        // Insert education headers before "Skill Level" (which is at index 1 after "Select")
+        const skillLevelIndex = originalHeaders.findIndex(header => header === 'Skill Level');
+        const customHeaders = [
+            originalHeaders[0], // Keep "Select" column
+            ...educationHeaders, // Add education fields
+            ...originalHeaders.slice(1) // Add rest of original headers (skip "Select")
+        ];
+        
+        const headerContent = customHeaders.map(header => `"${header}"`).join(',');
+        
+        console.log('Header content created with education fields:', headerContent);
 
-        // Add selected data rows
+        // Add selected data rows with education information
         const dataContent = selectedRows.map((row, index) => {
             const cells = Array.from(row.querySelectorAll('td'));
             console.log(`Row ${index}: ${cells.length} cells`);
-            return cells.map(cell => {
+            
+            // Get education data from current student data
+            const educationLevel = currentStudentData ? currentStudentData['education-level'] || '' : '';
+            const educationYear = currentStudentData ? currentStudentData['education-year'] || '' : '';
+            const semester = currentStudentData ? currentStudentData['semester'] || '' : '';
+            
+            // Create row data with education fields inserted
+            const originalData = cells.map(cell => {
                 const text = cell.textContent.trim().replace(/"/g, '""');
                 return `"${text}"`;
-            }).join(',');
+            });
+            
+            // Insert education data after the first cell (Select checkbox)
+            const customRowData = [
+                originalData[0], // Keep "Select" column
+                `"${educationLevel}"`, // Education Level
+                `"${educationYear}"`, // Education Year  
+                `"${semester}"`, // Semester
+                ...originalData.slice(1) // Add rest of original data (skip "Select")
+            ];
+            
+            return customRowData.join(',');
         }).join('\n');
         
         const csvContent = headerContent + '\n' + dataContent;
@@ -422,7 +455,7 @@ function downloadSelectedExcel() {
             console.log('Download cleanup completed');
         }, 100);
         
-        showSuccess(`Selected ${selectedRows.length} tasks downloaded successfully!`);
+        showSuccess(`Selected ${selectedRows.length} tasks with education data downloaded successfully!`);
         console.log('CSV download completed successfully');
         
         // Fallback: If download doesn't work, try alternative method
@@ -450,7 +483,7 @@ function downloadCSVFallback(csvContent, selectedCount) {
         
         if (newWindow) {
             console.log('Fallback method 1: Window.open successful');
-            showSuccess(`Selected ${selectedCount} tasks opened in new window!`);
+            showSuccess(`Selected ${selectedCount} tasks with education data opened in new window!`);
             return;
         }
         
@@ -470,7 +503,7 @@ function downloadCSVFallback(csvContent, selectedCount) {
             
             if (successful) {
                 console.log('Fallback method 2: Copy to clipboard successful');
-                showSuccess(`Selected ${selectedCount} tasks copied to clipboard! Paste into Excel or text editor.`);
+                showSuccess(`Selected ${selectedCount} tasks with education data copied to clipboard! Paste into Excel or text editor.`);
                 return;
             }
         } catch (err) {
@@ -480,8 +513,8 @@ function downloadCSVFallback(csvContent, selectedCount) {
         // Method 3: Show content in alert for manual copy
         console.log('Fallback method 3: Showing content in alert');
         const truncatedContent = csvContent.length > 1000 ? csvContent.substring(0, 1000) + '...' : csvContent;
-        alert(`CSV Content (first 1000 chars):\n\n${truncatedContent}\n\nPlease copy this content and save as .csv file.`);
-        showSuccess(`Selected ${selectedCount} tasks content displayed above. Please copy and save manually.`);
+        alert(`CSV Content with Education Data (first 1000 chars):\n\n${truncatedContent}\n\nPlease copy this content and save as .csv file.`);
+        showSuccess(`Selected ${selectedCount} tasks with education data content displayed above. Please copy and save manually.`);
         
     } catch (error) {
         console.error('Fallback download failed:', error);
