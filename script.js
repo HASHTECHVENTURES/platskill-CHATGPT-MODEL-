@@ -13,6 +13,7 @@ const CONFIG = {
         'gpt-5': 'GPT-5 (Most Advanced)',
         'gpt-5-mini': 'GPT-5 Mini (Balanced Performance)',
         'gpt-5-nano': 'GPT-5 Nano (Ultra Fast)',
+        'gpt-4.1': 'GPT-4.1 (Advanced)',
         'gpt-4o': 'GPT-4o (Latest)',
         'gpt-4o-mini': 'GPT-4o Mini (Fast & Cost-effective)',
         'gpt-4-turbo': 'GPT-4 Turbo (High Performance)',
